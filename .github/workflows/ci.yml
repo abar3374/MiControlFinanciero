@@ -76,12 +76,21 @@ jobs:
             echo "signed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # La contraseña solo tiene letras y números: se quitan espacios o saltos de línea
+          # que se cuelan al copiarla. Se muestra solo su longitud (debe ser 40), nunca el texto.
+          PASS=$(printf '%s' "$SIGNING_KEY_PASSWORD" | tr -d '[:space:]')
+          echo "::add-mask::$PASS"
+          echo "Longitud de la contraseña recibida: ${#PASS} caracteres (se esperan 40)."
           KS="$RUNNER_TEMP/finance-release.jks"
-          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
-            -in signing/finance-release.jks.enc -out "$KS" -pass env:SIGNING_KEY_PASSWORD
+          if ! PASS="$PASS" openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+              -in signing/finance-release.jks.enc -out "$KS" -pass env:PASS 2>/dev/null; then
+            rm -f "$KS"
+            echo "::error::La contraseña de SIGNING_KEY_PASSWORD no abre la clave. Cópiala de nuevo desde LEEME-RESPALDO.txt (solo los 40 caracteres)."
+            exit 1
+          fi
           {
             echo "FINANCE_KEYSTORE_PATH=$KS"
-            echo "FINANCE_KEYSTORE_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "FINANCE_KEYSTORE_PASSWORD=$PASS"
             echo "FINANCE_KEY_ALIAS=finance"
           } >> "$GITHUB_ENV"
           echo "signed=true" >> "$GITHUB_OUTPUT"
