@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="profile_title">Perfil y ajustes</string>
+    <string name="profile_section_region">Región y formato</string>
+    <string name="profile_country">País</string>
+    <string name="profile_country_value">Colombia</string>
+    <string name="profile_currency">Moneda</string>
+    <string name="profile_currency_value">Peso colombiano (COP) $</string>
+    <string name="profile_number_format">Formato de números</string>
+    <string name="profile_timezone">Zona horaria</string>
+    <string name="profile_language">Idioma</string>
+    <string name="profile_language_value">Español</string>
+    <string name="profile_pending_title">Tu perfil y tus ajustes</string>
+    <string name="profile_pending_message">Nombre, correo y foto, y la opción de cambiar estos valores (Fase 3). Preferencias de recordatorios (Fase 6). PIN, huella y respaldos cifrados (Fase 8). Canal de actualizaciones (Fase 9).</string>
+    <string name="profile_pending_badge">Llega por fases</string>
+    <string name="profile_section_about">Información de la aplicación</string>
+    <string name="profile_version">Versión instalada</string>
+    <string name="profile_privacy">Tus datos</string>
+    <string name="profile_privacy_value">Solo en este teléfono</string>
+</resources>

@@ -1,0 +1,66 @@
+# Integración continua: en cada push o pull request, GitHub compila la app,
+# ejecuta las pruebas y deja el APK de desarrollo (DEBUG) para descargar.
+# No usa secretos: no firma ni publica nada. La publicación llega en la Fase 9 (release.yml).
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compilar y probar
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle (con caché)
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Dar permiso de ejecución a gradlew
+        run: chmod +x gradlew
+
+      - name: Compilar APK de desarrollo
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Ejecutar pruebas unitarias
+        run: ./gradlew :core:model:test :core:domain:test testDebugUnitTest --stacktrace
+
+      - name: Revisar el código con Lint
+        run: ./gradlew lintDebug
+        continue-on-error: true
+
+      - name: Guardar el APK de desarrollo
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Guardar reportes de pruebas y lint
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          retention-days: 14

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="register_title">Registrar</string>
+    <string name="register_empty_title">Gasto o ingreso, en pocos toques</string>
+    <string name="register_empty_message">Podrás elegir Gasto o Ingreso, escribir el valor, en qué se fue la plata, la categoría, el método de pago (efectivo, transferencia, débito, crédito, PSE u otro) y adjuntar el comprobante.</string>
+    <string name="register_empty_badge">Llega en la Fase 4</string>
+    <string name="register_rule_title">Regla acordada: todo gasto dice en qué</string>
+    <string name="register_rule_message">Ningún gasto se podrá guardar sin el campo «¿En qué gastaste?», aunque vaya a la categoría Otros. Ejemplo: Sistecrédito, $200.465. Los ingresos fijos (salario) y variables también se registran, con su origen.</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name se define en app/build.gradle.kts: "Finance" (RELEASE) y "Finance Dev" (DEBUG). -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_budget">Presupuesto</string>
+    <string name="nav_register">Registrar</string>
+    <string name="nav_reports">Reportes</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="nav_register_description">Registrar gasto o ingreso</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="budget_title">Presupuesto</string>
+    <string name="budget_empty_title">Aquí armarás tu presupuesto</string>
+    <string name="budget_empty_message" formatted="false">Crearás rubros (arriendo, mercado, transporte…) con su valor del mes, marcarás cuáles son gastos fijos u ocasionales, y registrarás tus ingresos fijos como el salario. La app te avisará al llegar al 50, 75, 90 y 100 % de cada rubro.</string>
+    <string name="budget_empty_badge">Llega en las Fases 4 y 5</string>
+</resources>

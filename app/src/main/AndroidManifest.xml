@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Manifiesto de Finance.
+    Fase 1: la app NO pide ningún permiso. Los permisos se agregan solo cuando una
+    funcionalidad real los necesite (notificaciones en Fase 6, Internet para
+    actualizaciones en Fase 9), cada uno con su explicación.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        allowBackup=false y dataExtractionRules: Android no copia tus datos financieros
+        a la nube ni a otro teléfono por su cuenta. El respaldo será propio y cifrado (Fase 8).
+    -->
+    <application
+        android:name=".FinanceApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Finance">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

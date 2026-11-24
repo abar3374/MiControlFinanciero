@@ -1,0 +1,31 @@
+# Gradle y compilación
+.gradle/
+build/
+*/build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+local.properties
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# SEGURIDAD: nunca subir claves de firma ni secretos
+*.jks
+*.keystore
+*.p12
+*.pem
+keystore.properties
+signing.properties
+secrets.properties
+.env
+
+# APK y paquetes generados
+*.apk
+*.aab
