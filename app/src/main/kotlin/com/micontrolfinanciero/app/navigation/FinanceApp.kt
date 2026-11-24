@@ -14,19 +14,35 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
 import com.micontrolfinanciero.app.feature.budget.BudgetRoute
 import com.micontrolfinanciero.app.feature.dashboard.DashboardRoute
 import com.micontrolfinanciero.app.feature.expense.RegisterRoute
+import com.micontrolfinanciero.app.feature.lock.AppLockManager
+import com.micontrolfinanciero.app.feature.lock.LockRoute
+import com.micontrolfinanciero.app.feature.lock.LockState
+import com.micontrolfinanciero.app.feature.lock.LockStatusScreen
 import com.micontrolfinanciero.app.feature.profile.ProfileRoute
 import com.micontrolfinanciero.app.feature.reports.ReportsRoute
 
 /**
- * Esqueleto de la app: barra inferior + contenido de la pestaña elegida.
- * En la Fase 8 se agrega antes de esto la pantalla de bloqueo (PIN / huella).
+ * Esqueleto de la app. Primero pasa por el bloqueo (si el usuario creó contraseña);
+ * después muestra la barra inferior y el contenido de la pestaña elegida.
  */
 @Composable
-fun FinanceApp(appVersion: String) {
+fun FinanceApp(appVersion: String, lockManager: AppLockManager) {
+    val lockState by lockManager.state.collectAsStateWithLifecycle()
+    when (val state = lockState) {
+        LockState.Checking -> LockStatusScreen(message = null)
+        is LockState.Failed -> LockStatusScreen(message = state.message)
+        LockState.Locked -> LockRoute()
+        LockState.Unlocked -> FinanceMainContent(appVersion)
+    }
+}
+
+@Composable
+private fun FinanceMainContent(appVersion: String) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination

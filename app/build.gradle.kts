@@ -20,9 +20,26 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // Regla de versiones: versionCode SIEMPRE sube en cada publicación (el actualizador
         // rechaza versiones menores o iguales). versionName sigue MAYOR.MENOR.PARCHE.
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Firma de RELEASE: GitHub Actions descifra signing/finance-release.jks.enc y entrega
+    // la ruta y la contraseña por variables de entorno. En un computador sin esas variables,
+    // la versión RELEASE queda sin firmar (y la DEBUG usa la clave de depuración normal).
+    val releaseKeystore = System.getenv("FINANCE_KEYSTORE_PATH")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("FINANCE_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("FINANCE_KEY_ALIAS") ?: "finance"
+                keyPassword = System.getenv("FINANCE_KEYSTORE_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
     }
 
     buildTypes {
@@ -40,8 +57,7 @@ android {
                 "proguard-rules.pro",
             )
             resValue("string", "app_name", "Finance")
-            // La firma de RELEASE se configura en la Fase 9 con GitHub Secrets.
-            // La clave privada NUNCA se guarda en este repositorio.
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -61,6 +77,8 @@ kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 dependencies {
     // Módulos del proyecto
     implementation(projects.core.designsystem)
+    implementation(projects.core.data)
+    implementation(projects.feature.lock)
     implementation(projects.feature.dashboard)
     implementation(projects.feature.budget)
     implementation(projects.feature.expense)
@@ -70,6 +88,8 @@ dependencies {
     // AndroidX
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    // FragmentActivity: la ventana de huella de Android (BiometricPrompt) la necesita.
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)

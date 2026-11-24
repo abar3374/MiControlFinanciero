@@ -1,10 +1,12 @@
-// :core:security — Android Keystore, cifrado, PIN, biometría, respaldo cifrado y auditoría.
-// Fase 1: solo existe el módulo. Se implementa en la Fase 8.
+// :core:security — Android Keystore, clave de la base de datos, biometría.
+// Más adelante (Fase 8): bloqueo por inactividad configurable, respaldo cifrado y auditoría.
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -18,3 +20,12 @@ android {
 }
 
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    api(libs.androidx.biometric)
+    api(libs.androidx.fragment.ktx)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+}

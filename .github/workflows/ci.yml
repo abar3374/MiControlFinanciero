@@ -1,8 +1,11 @@
-# Integración continua: en cada push o pull request, GitHub compila la app,
-# ejecuta las pruebas y deja el APK de desarrollo (DEBUG) para descargar.
-# En cada push a main publica además el APK de prueba como "pre-release" (canal de pruebas),
-# para descargarlo desde el celular sin iniciar sesión. No usa secretos.
-# La versión estable firmada llega en la Fase 9 (release.yml).
+# Integración continua de Finance.
+#
+# En cada push o pull request: compila, ejecuta pruebas y revisa el código (lint).
+# En cada push a main, además, publica un APK de prueba como "pre-release":
+#   - Si existe el secreto SIGNING_KEY_PASSWORD: APK RELEASE firmado con la clave fija
+#     (signing/finance-release.jks.enc). Se actualiza encima de la versión anterior sin
+#     desinstalar y SIN perder datos. Tag: v<versionName>-<versionCode>-beta.
+#   - Si no existe: APK DEBUG (firma temporal, puede pedir desinstalar). Tag: ...-dev.
 name: CI
 
 on:
@@ -22,7 +25,7 @@ jobs:
   build:
     name: Compilar y probar
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: write   # solo para crear la pre-release con el APK de prueba
 
@@ -52,6 +55,54 @@ jobs:
         run: ./gradlew lintDebug
         continue-on-error: true
 
+      - name: Mostrar esquemas nuevos de la base de datos
+        run: |
+          # Room genera core/database/schemas/<clase>/<versión>.json. Deben guardarse en el
+          # repositorio para probar migraciones; si hay alguno sin guardar, se muestra aquí.
+          NEW=$(git status --porcelain --untracked-files=all core/database/schemas | awk '{print $2}')
+          if [ -n "$NEW" ]; then
+            echo "::warning::Hay esquemas de base de datos sin guardar en el repositorio"
+            for f in $NEW; do echo "===== $f"; cat "$f"; echo; echo "===== FIN"; done
+          fi
+
+      - name: Preparar la clave de firma
+        id: signing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          if [ -z "$SIGNING_KEY_PASSWORD" ]; then
+            echo "::warning::Falta el secreto SIGNING_KEY_PASSWORD: se publicará el APK DEBUG."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KS="$RUNNER_TEMP/finance-release.jks"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in signing/finance-release.jks.enc -out "$KS" -pass env:SIGNING_KEY_PASSWORD
+          {
+            echo "FINANCE_KEYSTORE_PATH=$KS"
+            echo "FINANCE_KEYSTORE_PASSWORD=$SIGNING_KEY_PASSWORD"
+            echo "FINANCE_KEY_ALIAS=finance"
+          } >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar APK firmado (RELEASE)
+        if: steps.signing.outputs.signed == 'true'
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Verificar la firma
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk | tee certs.txt
+          # Huella del certificado autorizado (ver signing/README.md).
+          grep -qi "SHA-256 digest: cd56e0e1d9367ce8b3f88a829a2d0f839311d5b0c2bcdc07616fbc33e90d7338" certs.txt \
+            || { echo "::error::El APK no está firmado con el certificado autorizado"; exit 1; }
+
+      - name: Borrar la clave de firma del servidor
+        if: always() && steps.signing.outputs.signed == 'true'
+        run: rm -f "$RUNNER_TEMP/finance-release.jks"
+
       - name: Guardar el APK de desarrollo
         uses: actions/upload-artifact@v4
         with:
@@ -69,23 +120,30 @@ jobs:
             **/build/test-results/
           retention-days: 14
 
-      # Canal de pruebas: publica el APK DEBUG como pre-release v<versionName>-<versionCode>-dev.
-      # Si ya existe esa versión, reemplaza el APK. Sube versionCode para crear una nueva.
       - name: Publicar APK de prueba (pre-release)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
           CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
           NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
-          TAG="v${NAME}-${CODE}-dev"
-          APK="finance-dev-${NAME}-${CODE}.apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          if [ "$SIGNED" = "true" ]; then
+            TAG="v${NAME}-${CODE}-beta"
+            APK="finance-${NAME}-${CODE}.apk"
+            cp app/build/outputs/apk/release/app-release.apk "$APK"
+            TITLE="Finance $NAME ($CODE) · prueba"
+            NOTES="APK de prueba firmado con la clave fija de Finance (desde ${GITHUB_SHA::7}). Se instala encima de la versión anterior sin borrar tus datos."
+          else
+            TAG="v${NAME}-${CODE}-dev"
+            APK="finance-dev-${NAME}-${CODE}.apk"
+            cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+            TITLE="Finance Dev $NAME ($CODE)"
+            NOTES="APK de desarrollo (DEBUG) desde ${GITHUB_SHA::7}. Firma temporal: puede pedir desinstalar la versión anterior."
+          fi
           sha256sum "$APK" > "$APK.sha256"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
           else
-            gh release create "$TAG" "$APK" "$APK.sha256" --prerelease \
-              --title "Finance Dev $NAME ($CODE)" \
-              --notes "APK de prueba (DEBUG) generado automáticamente desde ${GITHUB_SHA::7}. Se instala como «Finance Dev», aparte de la versión final."
+            gh release create "$TAG" "$APK" "$APK.sha256" --prerelease --title "$TITLE" --notes "$NOTES"
           fi

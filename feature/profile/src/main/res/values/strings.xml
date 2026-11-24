@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="profile_title">Perfil y ajustes</string>
+
+    <!-- Encabezado y foto -->
+    <string name="profile_no_name">Tu nombre</string>
+    <string name="profile_no_username">Sin usuario todavía</string>
+    <string name="profile_photo_add">Agregar foto</string>
+    <string name="profile_photo_change">Cambiar foto</string>
+    <string name="profile_photo_remove">Quitar foto</string>
+    <string name="profile_photo_description">Foto de perfil</string>
+
+    <!-- Datos personales -->
+    <string name="profile_section_personal">Datos personales</string>
+    <string name="profile_first_name">Nombre</string>
+    <string name="profile_last_name">Apellidos</string>
+    <string name="profile_phone">Celular</string>
+    <string name="profile_phone_hint">10 dígitos, por ejemplo 300 123 4567</string>
+    <string name="profile_email">Correo</string>
+    <string name="profile_optional">Opcional</string>
+    <string name="profile_complete_message">Completa tus datos básicos: nombre, apellidos y celular. Se guardan cifrados solo en este teléfono.</string>
+    <string name="profile_complete_button">Completar perfil</string>
+    <string name="profile_edit">Editar datos</string>
+
+    <!-- Seguridad -->
+    <string name="profile_section_security">Seguridad</string>
+    <string name="profile_credentials">Usuario y contraseña</string>
+    <string name="profile_credentials_set">Activo · usuario @%1$s</string>
+    <string name="profile_credentials_unset">Sin configurar: cualquiera que tome el teléfono puede abrir la app</string>
+    <string name="profile_create">Crear</string>
+    <string name="profile_change">Cambiar</string>
+    <string name="profile_username">Usuario</string>
+    <string name="profile_username_hint">Entre 4 y 30 caracteres: letras, números, punto o guion bajo</string>
+    <string name="profile_current_password">Contraseña actual</string>
+    <string name="profile_new_password">Nueva contraseña</string>
+    <string name="profile_password_hint">Mínimo 8 caracteres, con letras y números</string>
+    <string name="profile_confirm_password">Repite la contraseña</string>
+    <string name="profile_password_warning">Importante: la contraseña no se puede recuperar porque nada sale de tu teléfono. Activa también la huella como segunda forma de entrar.</string>
+    <string name="profile_biometric">Desbloqueo con huella</string>
+    <string name="profile_biometric_need_password">Primero crea tu usuario y contraseña.</string>
+    <string name="profile_biometric_not_enrolled">Registra una huella en los ajustes del teléfono para poder activarla.</string>
+    <string name="profile_biometric_unavailable">Este teléfono no tiene un lector de huella compatible.</string>
+    <string name="profile_biometric_on_hint">Puedes entrar con tu huella o con tu contraseña.</string>
+    <string name="profile_biometric_off_hint">Actívalo para entrar más rápido.</string>
+    <string name="profile_biometric_prompt_title">Activar huella</string>
+    <string name="profile_biometric_prompt_subtitle">Confirma con tu huella para usarla al abrir Finance</string>
+    <string name="profile_on">Activado</string>
+    <string name="profile_off">Desactivado</string>
+
+    <!-- Región -->
     <string name="profile_section_region">Región y formato</string>
     <string name="profile_country">País</string>
     <string name="profile_country_value">Colombia</string>
@@ -10,11 +57,14 @@
     <string name="profile_timezone">Zona horaria</string>
     <string name="profile_language">Idioma</string>
     <string name="profile_language_value">Español</string>
-    <string name="profile_pending_title">Tu perfil y tus ajustes</string>
-    <string name="profile_pending_message">Nombre, correo y foto, y la opción de cambiar estos valores (Fase 3). Preferencias de recordatorios (Fase 6). PIN, huella y respaldos cifrados (Fase 8). Canal de actualizaciones (Fase 9).</string>
-    <string name="profile_pending_badge">Llega por fases</string>
+
+    <!-- Información -->
     <string name="profile_section_about">Información de la aplicación</string>
     <string name="profile_version">Versión instalada</string>
     <string name="profile_privacy">Tus datos</string>
-    <string name="profile_privacy_value">Solo en este teléfono</string>
+    <string name="profile_privacy_value">Cifrados, solo en este teléfono</string>
+
+    <!-- Botones -->
+    <string name="profile_save">Guardar</string>
+    <string name="profile_cancel">Cancelar</string>
 </resources>

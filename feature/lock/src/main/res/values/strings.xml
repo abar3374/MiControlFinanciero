@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lock_greeting">Ingresa a Finance</string>
+    <string name="lock_greeting_name">Hola, %1$s</string>
+    <string name="lock_subtitle">Tus datos están cifrados en este teléfono.</string>
+    <string name="lock_username">Usuario</string>
+    <string name="lock_password">Contraseña</string>
+    <string name="lock_enter">Ingresar</string>
+    <string name="lock_wait">Espera %1$d s</string>
+    <string name="lock_use_fingerprint">Usar huella</string>
+    <string name="lock_biometric_title">Ingresar a Finance</string>
+    <string name="lock_biometric_subtitle">Pon tu dedo en el lector de huella</string>
+    <string name="lock_biometric_use_password">Usar contraseña</string>
+    <string name="lock_failed">No se pudo abrir la información cifrada (%1$s). Cierra la app y vuelve a abrirla. Si sigue pasando, avísanos.</string>
+</resources>

@@ -1,125 +1,145 @@
 package com.micontrolfinanciero.app.feature.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.micontrolfinanciero.app.core.designsystem.component.EmptyState
-import com.micontrolfinanciero.app.core.designsystem.component.FinanceCard
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.micontrolfinanciero.app.core.designsystem.component.ScreenHeader
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
-import com.micontrolfinanciero.app.core.designsystem.theme.FinanceTheme
-import com.micontrolfinanciero.app.core.model.Money
-import com.micontrolfinanciero.app.core.model.MoneyFormat
-import com.micontrolfinanciero.app.core.designsystem.R as DesignR
+import com.micontrolfinanciero.app.core.security.BiometricAuthenticator
+import com.micontrolfinanciero.app.core.security.findFragmentActivity
 
 /**
  * Pestaña Perfil y ajustes.
- * Fase 1: muestra la configuración regional inicial (Colombia) y la versión instalada.
- * Estos valores son reales: el formato de ejemplo se calcula con MoneyFormat.
- * En la Fase 3 se guardarán en AppSettings y se podrán modificar.
+ * Datos personales, foto, usuario y contraseña, y huella se guardan en la base cifrada.
+ * Región y formato se muestran con los valores iniciales (editables más adelante).
  */
 @Composable
 fun ProfileRoute(
     appVersion: String,
-    modifier: Modifier = Modifier,
+    viewModel: ProfileViewModel = hiltViewModel(),
 ) {
-    val sample = MoneyFormat.COLOMBIA.copy(showDecimals = true).format(Money(123_456_789L))
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val snackbar = remember { SnackbarHostState() }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        ScreenHeader(title = stringResource(R.string.profile_title))
+    LaunchedEffect(state.message) {
+        val message = state.message ?: return@LaunchedEffect
+        snackbar.showSnackbar(message)
+        viewModel.onMessageShown()
+    }
 
-        SectionTitle(stringResource(R.string.profile_section_region))
-        FinanceCard {
-            InfoRow(stringResource(R.string.profile_country), stringResource(R.string.profile_country_value))
-            InfoDivider()
-            InfoRow(stringResource(R.string.profile_currency), stringResource(R.string.profile_currency_value))
-            InfoDivider()
-            InfoRow(stringResource(R.string.profile_number_format), sample)
-            InfoDivider()
-            InfoRow(stringResource(R.string.profile_timezone), "America/Bogota")
-            InfoDivider()
-            InfoRow(stringResource(R.string.profile_language), stringResource(R.string.profile_language_value))
-        }
+    // Selector de fotos de Android: no necesita permisos y solo entrega la foto elegida.
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) viewModel.onPhotoPicked(uri.toString())
+    }
 
-        EmptyState(
-            title = stringResource(R.string.profile_pending_title),
-            message = stringResource(R.string.profile_pending_message),
-            badge = stringResource(R.string.profile_pending_badge),
-            iconRes = DesignR.drawable.ic_nav_profile,
-        )
+    val promptTitle = stringResource(R.string.profile_biometric_prompt_title)
+    val promptSubtitle = stringResource(R.string.profile_biometric_prompt_subtitle)
+    val promptCancel = stringResource(R.string.profile_cancel)
 
-        SectionTitle(stringResource(R.string.profile_section_about))
-        FinanceCard {
-            InfoRow(stringResource(R.string.profile_version), appVersion)
-            InfoDivider()
-            InfoRow(stringResource(R.string.profile_privacy), stringResource(R.string.profile_privacy_value))
+    val onBiometricToggle: (Boolean) -> Unit = { enable ->
+        if (!enable) {
+            viewModel.setBiometricEnabled(false)
+        } else {
+            // Para activar la huella, el dueño debe confirmarla una vez.
+            val activity = context.findFragmentActivity()
+            if (activity == null) {
+                viewModel.showMessage("No se pudo abrir el lector de huella.")
+            } else {
+                BiometricAuthenticator.authenticate(
+                    activity = activity,
+                    title = promptTitle,
+                    subtitle = promptSubtitle,
+                    negativeButtonText = promptCancel,
+                    onSuccess = { viewModel.setBiometricEnabled(true) },
+                    onError = { viewModel.showMessage(it) },
+                )
+            }
         }
     }
-}
 
-@Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        color = FinanceColors.MediumGray,
-        modifier = Modifier.padding(start = 4.dp),
-    )
-}
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (state.loading) {
+            CircularProgressIndicator(color = FinanceColors.Blue, modifier = Modifier.align(Alignment.Center))
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                ScreenHeader(title = stringResource(R.string.profile_title))
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 44.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = FinanceColors.DarkBlue,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = FinanceColors.MediumGray,
-            textAlign = TextAlign.End,
+                ProfileHeaderCard(
+                    profile = state.profile,
+                    photoBusy = state.photoBusy,
+                    onPickPhoto = {
+                        pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    onRemovePhoto = viewModel::removePhoto,
+                )
+
+                PersonalDataSection(
+                    profile = state.profile,
+                    editing = state.editingPersonal,
+                    form = state.personalForm,
+                    errors = state.personalErrors,
+                    saving = state.saving,
+                    onEdit = viewModel::startEditPersonal,
+                    onFormChange = viewModel::onPersonalFormChange,
+                    onSave = viewModel::savePersonal,
+                    onCancel = viewModel::cancelEditPersonal,
+                )
+
+                SecuritySection(
+                    profile = state.profile,
+                    biometricAvailability = BiometricAuthenticator.availability(context),
+                    editing = state.editingCredentials,
+                    form = state.credentialsForm,
+                    errors = state.credentialsErrors,
+                    saving = state.saving,
+                    onEdit = viewModel::startEditCredentials,
+                    onFormChange = viewModel::onCredentialsFormChange,
+                    onSave = viewModel::saveCredentials,
+                    onCancel = viewModel::cancelEditCredentials,
+                    onBiometricToggle = onBiometricToggle,
+                )
+
+                RegionSection()
+
+                AboutSection(appVersion = appVersion)
+            }
+        }
+
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp),
         )
     }
-}
-
-@Composable
-private fun InfoDivider() {
-    HorizontalDivider(color = FinanceColors.Border)
-}
-
-@Preview(showBackground = true, widthDp = 360)
-@Composable
-private fun ProfileRoutePreview() {
-    FinanceTheme { ProfileRoute(appVersion = "0.1.0 (1)") }
 }

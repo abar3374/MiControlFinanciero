@@ -1,19 +1,32 @@
 package com.micontrolfinanciero.app.feature.expense
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.micontrolfinanciero.app.core.designsystem.component.EmptyState
 import com.micontrolfinanciero.app.core.designsystem.component.FinanceCard
 import com.micontrolfinanciero.app.core.designsystem.component.ScreenHeader
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
@@ -21,9 +34,9 @@ import com.micontrolfinanciero.app.core.designsystem.theme.FinanceTheme
 import com.micontrolfinanciero.app.core.designsystem.R as DesignR
 
 /**
- * Botón central "Registrar".
- * Fase 1: explica qué se podrá registrar. Fase 4: formulario real de gasto o ingreso,
- * con el campo "¿En qué gastaste?" obligatorio.
+ * Botón central "Registrar": una lista de tarjetas con lo que se puede registrar.
+ * Hoy: Gasto e Ingreso. Las tarjetas aún no abren formulario (llega en la Fase 4),
+ * por eso se ven claramente marcadas y no responden al toque.
  */
 @Composable
 fun RegisterRoute(modifier: Modifier = Modifier) {
@@ -32,16 +45,33 @@ fun RegisterRoute(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         ScreenHeader(title = stringResource(R.string.register_title))
-        EmptyState(
-            title = stringResource(R.string.register_empty_title),
-            message = stringResource(R.string.register_empty_message),
-            badge = stringResource(R.string.register_empty_badge),
-            iconRes = DesignR.drawable.ic_nav_add,
+        Text(
+            text = stringResource(R.string.register_question),
+            style = MaterialTheme.typography.bodyLarge,
+            color = FinanceColors.MediumGray,
         )
-        FinanceCard {
+
+        RegisterOptionCard(
+            iconRes = DesignR.drawable.ic_expense,
+            accent = FinanceColors.Red,
+            tint = FinanceColors.RedTint,
+            title = stringResource(R.string.register_expense_title),
+            description = stringResource(R.string.register_expense_description),
+            badge = stringResource(R.string.register_coming_badge),
+        )
+        RegisterOptionCard(
+            iconRes = DesignR.drawable.ic_income,
+            accent = FinanceColors.Green,
+            tint = FinanceColors.GreenTint,
+            title = stringResource(R.string.register_income_title),
+            description = stringResource(R.string.register_income_description),
+            badge = stringResource(R.string.register_coming_badge),
+        )
+
+        FinanceCard(filled = true) {
             Text(
                 text = stringResource(R.string.register_rule_title),
                 style = MaterialTheme.typography.titleSmall,
@@ -53,6 +83,54 @@ fun RegisterRoute(modifier: Modifier = Modifier) {
                 color = FinanceColors.MediumGray,
                 modifier = Modifier.padding(top = 6.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun RegisterOptionCard(
+    @DrawableRes iconRes: Int,
+    accent: Color,
+    tint: Color,
+    title: String,
+    description: String,
+    badge: String,
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = FinanceColors.White,
+        border = BorderStroke(1.dp, FinanceColors.Border),
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
+    ) {
+        Row(
+            modifier = Modifier.padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(tint, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(painter = painterResource(iconRes), contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue)
+                Text(text = description, style = MaterialTheme.typography.bodySmall, color = FinanceColors.MediumGray)
+                Text(
+                    text = badge,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = FinanceColors.Blue,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .background(FinanceColors.BlueTint, RoundedCornerShape(999.dp))
+                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
         }
     }
 }

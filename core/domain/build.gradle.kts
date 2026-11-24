@@ -19,7 +19,8 @@ kotlin {
 
 dependencies {
     api(projects.core.model)
-    // Coroutines y Flow se agregan en la Fase 3, cuando existan los repositorios.
+    // Flow: los repositorios avisan los cambios de datos a las pantallas.
+    api(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
 }

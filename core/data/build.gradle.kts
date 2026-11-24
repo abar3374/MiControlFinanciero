@@ -1,10 +1,11 @@
 // :core:data — repositorios que implementan las interfaces del dominio usando :core:database.
-// Fase 1: solo existe el módulo. Se implementa en la Fase 3.
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -20,6 +21,11 @@ android {
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
 dependencies {
-    implementation(projects.core.domain)
+    api(projects.core.domain)
     implementation(projects.core.database)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.exifinterface)
+
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }
