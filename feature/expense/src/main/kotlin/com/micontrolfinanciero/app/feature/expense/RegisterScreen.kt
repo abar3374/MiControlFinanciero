@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.micontrolfinanciero.app.core.designsystem.component.FinanceCard
@@ -35,11 +34,15 @@ import com.micontrolfinanciero.app.core.designsystem.R as DesignR
 
 /**
  * Botón central "Registrar": una lista de tarjetas con lo que se puede registrar.
- * Hoy: Gasto e Ingreso. Las tarjetas aún no abren formulario (llega en la Fase 4),
- * por eso se ven claramente marcadas y no responden al toque.
+ * Cada tarjeta abre su formulario.
  */
 @Composable
-fun RegisterRoute(modifier: Modifier = Modifier) {
+fun RegisterRoute(
+    onNewExpense: () -> Unit,
+    onNewIncome: () -> Unit,
+    onOpenMovements: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -60,7 +63,7 @@ fun RegisterRoute(modifier: Modifier = Modifier) {
             tint = FinanceColors.RedTint,
             title = stringResource(R.string.register_expense_title),
             description = stringResource(R.string.register_expense_description),
-            badge = stringResource(R.string.register_coming_badge),
+            onClick = onNewExpense,
         )
         RegisterOptionCard(
             iconRes = DesignR.drawable.ic_income,
@@ -68,7 +71,15 @@ fun RegisterRoute(modifier: Modifier = Modifier) {
             tint = FinanceColors.GreenTint,
             title = stringResource(R.string.register_income_title),
             description = stringResource(R.string.register_income_description),
-            badge = stringResource(R.string.register_coming_badge),
+            onClick = onNewIncome,
+        )
+        RegisterOptionCard(
+            iconRes = DesignR.drawable.ic_list,
+            accent = FinanceColors.Blue,
+            tint = FinanceColors.BlueTint,
+            title = stringResource(R.string.register_history_title),
+            description = stringResource(R.string.register_history_description),
+            onClick = onOpenMovements,
         )
 
         FinanceCard(filled = true) {
@@ -94,16 +105,15 @@ private fun RegisterOptionCard(
     tint: Color,
     title: String,
     description: String,
-    badge: String,
+    onClick: () -> Unit,
 ) {
     Surface(
+        onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = FinanceColors.White,
         border = BorderStroke(1.dp, FinanceColors.Border),
         shadowElevation = 1.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) {},
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(18.dp),
@@ -121,15 +131,6 @@ private fun RegisterOptionCard(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = title, style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue)
                 Text(text = description, style = MaterialTheme.typography.bodySmall, color = FinanceColors.MediumGray)
-                Text(
-                    text = badge,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = FinanceColors.Blue,
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .background(FinanceColors.BlueTint, RoundedCornerShape(999.dp))
-                        .padding(horizontal = 10.dp, vertical = 3.dp),
-                )
             }
         }
     }
@@ -138,5 +139,5 @@ private fun RegisterOptionCard(
 @Preview(showBackground = true, widthDp = 360)
 @Composable
 private fun RegisterRoutePreview() {
-    FinanceTheme { RegisterRoute() }
+    FinanceTheme { RegisterRoute(onNewExpense = {}, onNewIncome = {}, onOpenMovements = {}) }
 }

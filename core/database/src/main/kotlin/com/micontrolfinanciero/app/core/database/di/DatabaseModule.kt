@@ -3,6 +3,12 @@ package com.micontrolfinanciero.app.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.micontrolfinanciero.app.core.database.FinanceDatabase
+import com.micontrolfinanciero.app.core.database.dao.AuditDao
+import com.micontrolfinanciero.app.core.database.dao.BudgetDao
+import com.micontrolfinanciero.app.core.database.dao.CategoryDao
+import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
+import com.micontrolfinanciero.app.core.database.dao.IncomeDao
+import com.micontrolfinanciero.app.core.database.dao.MovementDao
 import com.micontrolfinanciero.app.core.database.dao.UserProfileDao
 import com.micontrolfinanciero.app.core.security.DatabasePassphraseProvider
 import dagger.Module
@@ -32,6 +38,11 @@ object DatabaseModule {
             .build()
     }
 
-    @Provides
-    fun provideUserProfileDao(database: FinanceDatabase): UserProfileDao = database.userProfileDao()
+    @Provides fun provideUserProfileDao(db: FinanceDatabase): UserProfileDao = db.userProfileDao()
+    @Provides fun provideCategoryDao(db: FinanceDatabase): CategoryDao = db.categoryDao()
+    @Provides fun provideBudgetDao(db: FinanceDatabase): BudgetDao = db.budgetDao()
+    @Provides fun provideExpenseDao(db: FinanceDatabase): ExpenseDao = db.expenseDao()
+    @Provides fun provideIncomeDao(db: FinanceDatabase): IncomeDao = db.incomeDao()
+    @Provides fun provideMovementDao(db: FinanceDatabase): MovementDao = db.movementDao()
+    @Provides fun provideAuditDao(db: FinanceDatabase): AuditDao = db.auditDao()
 }

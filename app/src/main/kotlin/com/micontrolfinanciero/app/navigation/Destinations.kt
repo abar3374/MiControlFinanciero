@@ -16,6 +16,12 @@ import com.micontrolfinanciero.app.core.designsystem.R as DesignR
 @Serializable data object ReportsDestination
 @Serializable data object ProfileDestination
 
+/* Pantallas secundarias (sin barra inferior). id = 0 significa "nuevo". */
+@Serializable data class ExpenseFormDestination(val id: Long = 0L)
+@Serializable data class IncomeFormDestination(val id: Long = 0L)
+@Serializable data class BudgetFormDestination(val id: Long = 0L)
+@Serializable data object MovementsDestination
+
 /** Las cinco entradas de la barra inferior, en orden. */
 enum class TopLevelDestination(
     val route: Any,

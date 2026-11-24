@@ -6,7 +6,8 @@
     <string name="register_expense_description">Plata que sale: en qué la gastaste, cuánto, categoría y cómo pagaste (efectivo, transferencia, tarjeta, PSE…).</string>
     <string name="register_income_title">Registrar ingreso</string>
     <string name="register_income_description">Plata que entra: salario (fijo, cada mes) o ingresos variables, con su origen.</string>
-    <string name="register_coming_badge">El formulario llega en la Fase 4</string>
+    <string name="register_history_title">Ver movimientos</string>
+    <string name="register_history_description">Historial del mes: busca, revisa, edita o elimina tus gastos e ingresos.</string>
     <string name="register_rule_title">Regla acordada: todo gasto dice en qué</string>
-    <string name="register_rule_message">Ningún gasto se podrá guardar sin el campo «¿En qué gastaste?», aunque vaya a la categoría Otros. Ejemplo: Sistecrédito, $200.465.</string>
+    <string name="register_rule_message">Ningún gasto se puede guardar sin el campo «¿En qué gastaste?», aunque vaya a la categoría Otros. Ejemplo: Sistecrédito, $200.465.</string>
 </resources>

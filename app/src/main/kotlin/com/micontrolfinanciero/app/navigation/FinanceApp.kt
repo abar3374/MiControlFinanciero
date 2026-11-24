@@ -16,8 +16,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
+import com.micontrolfinanciero.app.core.model.MovementKind
+import com.micontrolfinanciero.app.feature.budget.BudgetFormRoute
 import com.micontrolfinanciero.app.feature.budget.BudgetRoute
 import com.micontrolfinanciero.app.feature.dashboard.DashboardRoute
+import com.micontrolfinanciero.app.feature.expense.ExpenseFormRoute
+import com.micontrolfinanciero.app.feature.expense.IncomeFormRoute
+import com.micontrolfinanciero.app.feature.expense.MovementsRoute
 import com.micontrolfinanciero.app.feature.expense.RegisterRoute
 import com.micontrolfinanciero.app.feature.lock.AppLockManager
 import com.micontrolfinanciero.app.feature.lock.LockRoute
@@ -46,16 +51,21 @@ private fun FinanceMainContent(appVersion: String) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    // Los formularios y el historial ocupan toda la pantalla (sin barra inferior).
+    val showBottomBar = TopLevelDestination.entries.any { currentDestination.isOn(it) }
 
     Scaffold(
         containerColor = FinanceColors.White,
         bottomBar = {
-            FinanceBottomBar(
-                isSelected = { destination -> currentDestination.isOn(destination) },
-                onNavigate = { destination -> navController.navigateToTopLevel(destination) },
-            )
+            if (showBottomBar) {
+                FinanceBottomBar(
+                    isSelected = { destination -> currentDestination.isOn(destination) },
+                    onNavigate = { destination -> navController.navigateToTopLevel(destination) },
+                )
+            }
         },
     ) { innerPadding ->
+        val back: () -> Unit = { navController.popBackStack() }
         NavHost(
             navController = navController,
             startDestination = HomeDestination,
@@ -64,13 +74,45 @@ private fun FinanceMainContent(appVersion: String) {
             composable<HomeDestination> {
                 DashboardRoute(
                     onOpenProfile = { navController.navigateToTopLevel(TopLevelDestination.PROFILE) },
-                    onRegisterMovement = { navController.navigateToTopLevel(TopLevelDestination.REGISTER) },
+                    onRegisterExpense = { navController.navigate(ExpenseFormDestination()) },
+                    onRegisterIncome = { navController.navigate(IncomeFormDestination()) },
+                    onOpenMovements = { navController.navigate(MovementsDestination) },
+                    onOpenBudget = { navController.navigateToTopLevel(TopLevelDestination.BUDGET) },
+                    onOpenMovement = { item ->
+                        if (item.kind == MovementKind.EXPENSE) {
+                            navController.navigate(ExpenseFormDestination(item.id))
+                        } else {
+                            navController.navigate(IncomeFormDestination(item.id))
+                        }
+                    },
                 )
             }
-            composable<BudgetDestination> { BudgetRoute() }
-            composable<RegisterDestination> { RegisterRoute() }
+            composable<BudgetDestination> {
+                BudgetRoute(
+                    onNewBudget = { navController.navigate(BudgetFormDestination()) },
+                    onOpenBudget = { id -> navController.navigate(BudgetFormDestination(id)) },
+                )
+            }
+            composable<RegisterDestination> {
+                RegisterRoute(
+                    onNewExpense = { navController.navigate(ExpenseFormDestination()) },
+                    onNewIncome = { navController.navigate(IncomeFormDestination()) },
+                    onOpenMovements = { navController.navigate(MovementsDestination) },
+                )
+            }
             composable<ReportsDestination> { ReportsRoute() }
             composable<ProfileDestination> { ProfileRoute(appVersion = appVersion) }
+
+            composable<ExpenseFormDestination> { ExpenseFormRoute(onDone = back) }
+            composable<IncomeFormDestination> { IncomeFormRoute(onDone = back) }
+            composable<BudgetFormDestination> { BudgetFormRoute(onDone = back) }
+            composable<MovementsDestination> {
+                MovementsRoute(
+                    onBack = back,
+                    onOpenExpense = { id -> navController.navigate(ExpenseFormDestination(id)) },
+                    onOpenIncome = { id -> navController.navigate(IncomeFormDestination(id)) },
+                )
+            }
         }
     }
 }

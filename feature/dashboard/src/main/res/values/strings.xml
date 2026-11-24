@@ -3,8 +3,4 @@
     <string name="dashboard_app_name">Finance</string>
     <string name="dashboard_welcome_no_name">Bienvenido a Finance</string>
     <string name="dashboard_open_profile">Ir al perfil</string>
-    <string name="dashboard_empty_title">Aún no hay movimientos</string>
-    <string name="dashboard_empty_message">Aquí verás tu presupuesto del mes, ingresos frente a gastos, en qué se te va la plata y tus próximos pagos. Se llena a partir de la Fase 4, cuando registres tus primeros gastos e ingresos.</string>
-    <string name="dashboard_empty_badge">Fase 1 de 10 · base del proyecto</string>
-    <string name="dashboard_register_button">Registrar un gasto o ingreso</string>
 </resources>

@@ -1,26 +1,54 @@
 package com.micontrolfinanciero.app.core.database
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.micontrolfinanciero.app.core.database.dao.AuditDao
+import com.micontrolfinanciero.app.core.database.dao.BudgetDao
+import com.micontrolfinanciero.app.core.database.dao.CategoryDao
+import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
+import com.micontrolfinanciero.app.core.database.dao.IncomeDao
+import com.micontrolfinanciero.app.core.database.dao.MovementDao
 import com.micontrolfinanciero.app.core.database.dao.UserProfileDao
+import com.micontrolfinanciero.app.core.database.entity.AuditLogEntity
+import com.micontrolfinanciero.app.core.database.entity.BudgetEntity
+import com.micontrolfinanciero.app.core.database.entity.ExpenseCategoryEntity
+import com.micontrolfinanciero.app.core.database.entity.ExpenseEntity
+import com.micontrolfinanciero.app.core.database.entity.IncomeEntity
 import com.micontrolfinanciero.app.core.database.entity.UserProfileEntity
 
 /**
  * Base de datos de Finance.
  *
- * REGLA: cada cambio en las tablas sube [version] y trae su Migration con prueba.
- * Nunca se usa la migración destructiva: tus datos deben sobrevivir a cada actualización.
+ * REGLA: cada cambio en las tablas sube [version] y trae su migración. Nunca se usa la
+ * migración destructiva: tus datos deben sobrevivir a cada actualización.
  *
- * Versión 1 (0.2.0): perfil del usuario. Las tablas de gastos, ingresos, presupuestos y
- * créditos llegan en las siguientes versiones.
+ * Historial:
+ *  - v1 (0.2.0): user_profile.
+ *  - v2 (0.3.0): expense_category, budget, expense, income, audit_log. Migración automática
+ *    (solo agrega tablas nuevas; el perfil queda intacto).
  */
 @Database(
-    entities = [UserProfileEntity::class],
-    version = 1,
+    entities = [
+        UserProfileEntity::class,
+        ExpenseCategoryEntity::class,
+        BudgetEntity::class,
+        ExpenseEntity::class,
+        IncomeEntity::class,
+        AuditLogEntity::class,
+    ],
+    version = 2,
     exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 abstract class FinanceDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
+    abstract fun categoryDao(): CategoryDao
+    abstract fun budgetDao(): BudgetDao
+    abstract fun expenseDao(): ExpenseDao
+    abstract fun incomeDao(): IncomeDao
+    abstract fun movementDao(): MovementDao
+    abstract fun auditDao(): AuditDao
 
     companion object {
         const val FILE_NAME = "finance.db"
