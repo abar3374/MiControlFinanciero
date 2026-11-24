@@ -2,6 +2,19 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [0.2.0] - 2026-11-24 · Perfil, seguridad y Registrar
+
+### Agregado
+- Base de datos Room cifrada con SQLCipher; su clave se protege con el Android Keystore (versión 1 del esquema).
+- Perfil: nombre, apellidos, celular (Colombia, 10 dígitos), correo opcional y foto (selector de fotos, sin permisos).
+- Usuario y contraseña para entrar a la app; la contraseña se guarda como hash PBKDF2-SHA256 con sal.
+- Desbloqueo con huella (BiometricPrompt, biometría fuerte), activable desde Perfil.
+- Pantalla de bloqueo al abrir la app y al volver tras 1 minuto fuera; espera creciente tras 5 intentos fallidos.
+- Registrar: tarjetas "Registrar gasto" y "Registrar ingreso" (los formularios llegan en la Fase 4).
+- Inicio saluda con el nombre del perfil.
+- Firma fija de RELEASE: clave cifrada en `signing/` y contraseña en GitHub Secrets.
+- 9 pruebas nuevas (validación del perfil y hash de contraseñas).
+
 ## [0.1.0] - 2026-11-24 · Fase 1: arquitectura
 
 ### Agregado
