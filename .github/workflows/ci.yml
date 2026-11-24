@@ -76,18 +76,29 @@ jobs:
             echo "signed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # La contraseña solo tiene letras y números: se quitan espacios o saltos de línea
-          # que se cuelan al copiarla. Se muestra solo su longitud (debe ser 40), nunca el texto.
-          PASS=$(printf '%s' "$SIGNING_KEY_PASSWORD" | tr -d '[:space:]')
-          echo "::add-mask::$PASS"
-          echo "Longitud de la contraseña recibida: ${#PASS} caracteres (se esperan 40)."
+          # La contraseña tiene 40 letras y números. Si al copiarla se coló más texto (espacios,
+          # saltos de línea o las líneas vecinas de LEEME-RESPALDO.txt), se prueban los trozos de
+          # 40 caracteres que contenga. Nunca se muestra la contraseña, solo longitudes.
+          RAW_LEN=${#SIGNING_KEY_PASSWORD}
+          echo "Longitud del secreto recibido: $RAW_LEN caracteres (la contraseña tiene 40)."
+          CANDIDATES=$( { printf '%s' "$SIGNING_KEY_PASSWORD" | tr -c 'A-Za-z0-9' '\n' | awk 'length($0)==40';
+                          printf '%s' "$SIGNING_KEY_PASSWORD" | tr -d '[:space:]'; echo; } | awk 'NF' )
           KS="$RUNNER_TEMP/finance-release.jks"
-          if ! PASS="$PASS" openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
-              -in signing/finance-release.jks.enc -out "$KS" -pass env:PASS 2>/dev/null; then
+          PASS=""
+          while IFS= read -r C; do
+            echo "::add-mask::$C"
+            if P="$C" openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+                -in signing/finance-release.jks.enc -out "$KS" -pass env:P 2>/dev/null \
+              && keytool -list -keystore "$KS" -storetype PKCS12 -storepass "$C" >/dev/null 2>&1; then
+              PASS="$C"; break
+            fi
+          done <<< "$CANDIDATES"
+          if [ -z "$PASS" ]; then
             rm -f "$KS"
             echo "::error::La contraseña de SIGNING_KEY_PASSWORD no abre la clave. Cópiala de nuevo desde LEEME-RESPALDO.txt (solo los 40 caracteres)."
             exit 1
           fi
+          echo "Clave de firma descifrada correctamente."
           {
             echo "FINANCE_KEYSTORE_PATH=$KS"
             echo "FINANCE_KEYSTORE_PASSWORD=$PASS"
