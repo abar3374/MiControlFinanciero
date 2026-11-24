@@ -10,7 +10,7 @@
 
 | Fase | Nombre | Estado |
 | --- | --- | --- |
-| 1 | Arquitectura | Código entregado · **pendiente: confirmar que compila** (Android Studio o GitHub Actions) |
+| 1 | Arquitectura | Compila en GitHub Actions (24-nov, primer intento) · pendiente: el usuario la abre en su teléfono |
 | 2 | Interfaz | Pendiente |
 | 3 | Base de datos | Pendiente |
 | 4 | Presupuestos, gastos e ingresos | Pendiente |
@@ -21,7 +21,7 @@
 | 9 | Actualizaciones | Pendiente |
 | 10 | Pruebas y publicación | Pendiente |
 
-**Fase terminada:** ninguna confirmada todavía (la Fase 1 espera prueba de compilación).
+**Fase terminada:** Fase 1 compilada y probada en CI; falta la revisión del usuario en el teléfono.
 **Fase pendiente inmediata:** confirmar Fase 1 → iniciar Fase 2.
 
 ## Documentos de diseño
@@ -70,18 +70,21 @@
 
 ## Configuración pendiente del usuario
 
-- `gradle.properties`: reemplazar `finance.updates.githubOwner=TU_USUARIO_GITHUB` (se usa en Fase 9).
-- Crear el repositorio público en GitHub y subir el proyecto (ver `docs/FASE_1.md`).
+- Repositorio público: https://github.com/abar3374/MiControlFinanciero (creado y conectado a Claude el 24-nov).
+- Cada push a `main` publica el APK de prueba como pre-release `v<versionName>-<versionCode>-dev`.
+- El APK DEBUG se firma con una clave distinta en cada ejecución de CI: instalar una versión nueva puede
+  pedir desinstalar la anterior. **Antes de la Fase 3** (cuando la app empiece a guardar datos) hay que
+  configurar una firma fija con GitHub Secrets para no perder datos al actualizar.
 
 ## Errores encontrados
 
-- Ninguno confirmado. El código de la Fase 1 se escribió sin poder compilarse en el entorno
-  del asistente (sin SDK de Android). La primera compilación real es en Android Studio o en
-  GitHub Actions: cualquier error se corrige antes de pasar a la Fase 2.
+- Ninguno. La Fase 1 compiló, pasó las 14 pruebas y el lint en GitHub Actions al primer intento.
+- El entorno del asistente no tiene SDK de Android ni puede descargar artefactos de Actions:
+  compila siempre en GitHub Actions y entrega el APK por la pre-release.
 
 ## Próximas tareas
 
-1. Usuario: abrir en Android Studio o subir a GitHub y confirmar que compila y abre.
+1. Usuario: instalar el APK de la pre-release v0.1.0-1-dev y revisar la lista de `docs/FASE_1.md` (paso 5).
 2. Fase 2 (Interfaz): componentes reutilizables del boceto (tarjetas de resumen, filas de
    movimiento, chips, campos de dinero), estructura visual completa de Inicio y Perfil,
    adaptación a pantallas pequeñas (360 dp) y grandes.
