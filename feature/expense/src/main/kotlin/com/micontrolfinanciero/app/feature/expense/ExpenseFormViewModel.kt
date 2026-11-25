@@ -68,7 +68,7 @@ data class SavedResult(val message: String, val alert: String?)
 @HiltViewModel
 class ExpenseFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    categoryRepository: CategoryRepository,
+    private val categoryRepository: CategoryRepository,
     private val budgetRepository: BudgetRepository,
     private val movementRepository: MovementRepository,
 ) : ViewModel() {
@@ -161,6 +161,24 @@ class ExpenseFormViewModel @Inject constructor(
                 budgetChosenByUser = preferredBudget != null,
                 nature = category?.nature?.defaultClassification() ?: nature,
             )
+        }
+    }
+
+    /** Crea una categoría desde el formulario y la deja elegida. */
+    fun createCategory(name: String, nature: ExpenseNature) {
+        viewModelScope.launch {
+            runCatching { categoryRepository.addCategory(name, nature) }
+                .onSuccess { id ->
+                    edit {
+                        copy(
+                            categoryId = id,
+                            budgetsForCategory = allBudgets.filter { it.categoryId == id },
+                            budgetId = allBudgets.firstOrNull { it.categoryId == id }?.id,
+                            nature = nature.defaultClassification(),
+                        )
+                    }
+                }
+                .onFailure { e -> _state.update { it.copy(error = e.message ?: "No se pudo crear la categoría.") } }
         }
     }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -166,6 +167,9 @@ fun <T> ChoiceChips(
     selected: T?,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    /** Si no es null, agrega al final un chip "+ …" (por ejemplo "+ Nueva categoría"). */
+    addLabel: String? = null,
+    onAdd: (() -> Unit)? = null,
 ) {
     FlowRow(
         modifier = modifier.fillMaxWidth(),
@@ -185,7 +189,61 @@ fun <T> ChoiceChips(
                 modifier = Modifier.heightIn(min = 40.dp),
             )
         }
+        if (addLabel != null && onAdd != null) {
+            AssistChip(
+                onClick = onAdd,
+                label = { Text(addLabel, color = FinanceColors.Blue) },
+                modifier = Modifier.heightIn(min = 40.dp),
+            )
+        }
     }
+}
+
+/**
+ * Diálogo para crear una categoría sin salir del formulario.
+ * [validate] devuelve el mensaje de error o null si el nombre sirve.
+ */
+@Composable
+fun <T> NewCategoryDialog(
+    natureOptions: List<ChipOption<T>>,
+    initialNature: T,
+    validate: (String) -> String?,
+    onCreate: (name: String, nature: T) -> Unit,
+    onDismiss: () -> Unit,
+    title: String = "Nueva categoría",
+    initialName: String = "",
+    confirmText: String = "Crear",
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var nature by remember { mutableStateOf(initialNature) }
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                FinanceTextField(
+                    value = name,
+                    onValueChange = { name = it; error = null },
+                    label = "Nombre (ejemplo: Mascotas)",
+                    error = error,
+                    maxLength = 40,
+                    imeAction = ImeAction.Done,
+                )
+                if (natureOptions.isNotEmpty()) {
+                    FieldLabel("Clasificación habitual")
+                    ChoiceChips(options = natureOptions, selected = nature, onSelect = { nature = it })
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val problem = validate(name)
+                if (problem != null) error = problem else onCreate(name.trim(), nature)
+            }) { Text(confirmText) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+    )
 }
 
 /** Fecha y hora con sus selectores de Android. */

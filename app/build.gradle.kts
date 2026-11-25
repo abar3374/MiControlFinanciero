@@ -20,8 +20,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // Regla de versiones: versionCode SIEMPRE sube en cada publicación (el actualizador
         // rechaza versiones menores o iguales). versionName sigue MAYOR.MENOR.PARCHE.
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -81,6 +81,7 @@ dependencies {
     implementation(projects.feature.lock)
     implementation(projects.feature.dashboard)
     implementation(projects.feature.budget)
+    implementation(projects.feature.credit)
     implementation(projects.feature.expense)
     implementation(projects.feature.reports)
     implementation(projects.feature.profile)

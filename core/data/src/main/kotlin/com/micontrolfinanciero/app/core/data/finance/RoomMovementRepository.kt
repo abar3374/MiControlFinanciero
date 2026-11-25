@@ -6,6 +6,7 @@ import com.micontrolfinanciero.app.core.database.dao.AuditDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
 import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
+import com.micontrolfinanciero.app.core.database.dao.FixedPaymentDao
 import com.micontrolfinanciero.app.core.database.dao.IncomeDao
 import com.micontrolfinanciero.app.core.database.dao.MovementDao
 import com.micontrolfinanciero.app.core.database.entity.AuditLogEntity
@@ -36,6 +37,7 @@ class RoomMovementRepository @Inject constructor(
     private val budgetDao: BudgetDao,
     private val categoryDao: CategoryDao,
     private val movementDao: MovementDao,
+    private val fixedPaymentDao: FixedPaymentDao,
     private val auditDao: AuditDao,
 ) : MovementRepository {
 
@@ -76,6 +78,8 @@ class RoomMovementRepository @Inject constructor(
             val existing = expenseDao.get(id) ?: return@withTransaction
             val now = System.currentTimeMillis()
             expenseDao.markVoided(id, now)
+            // Si era el pago de un pago fijo, ese mes vuelve a quedar pendiente.
+            fixedPaymentDao.deleteRecordsForExpense(id)
             audit("expense", id, "DELETE", existing.auditText(), now)
         }
     }
@@ -149,7 +153,7 @@ class RoomMovementRepository @Inject constructor(
             expenseDao.observeTotalsByCategory(range.startMillis, range.endMillis),
         ) { spent, income, byBudget, byCategory -> Totals(spent, income, byBudget.associate { it.groupId to it.totalCents }, byCategory) }
 
-        return combine(totals, budgetDao.observeAll(), categoryDao.observeActive()) { t, budgets, categories ->
+        return combine(totals, budgetDao.observeAll(), categoryDao.observeAll()) { t, budgets, categories ->
             val categoryNames = categories.associate { it.id to it.name }
             // Rubros que cuentan este mes: activos y que ya habían empezado.
             val monthBudgets = budgets.filter { it.active && it.startEpochDay <= lastDay.toEpochDay() }

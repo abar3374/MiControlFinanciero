@@ -2,6 +2,7 @@ package com.micontrolfinanciero.app.feature.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.micontrolfinanciero.app.core.domain.finance.FixedPaymentRepository
 import com.micontrolfinanciero.app.core.domain.finance.MonthRange
 import com.micontrolfinanciero.app.core.domain.finance.MovementRepository
 import com.micontrolfinanciero.app.core.domain.profile.UserProfileRepository
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import javax.inject.Inject
@@ -26,6 +28,7 @@ import javax.inject.Inject
 class DashboardViewModel @Inject constructor(
     profileRepository: UserProfileRepository,
     movementRepository: MovementRepository,
+    fixedPaymentRepository: FixedPaymentRepository,
 ) : ViewModel() {
 
     /** Cambia al volver a la app: actualiza saludo, fecha y, si cambió el mes, el resumen. */
@@ -36,8 +39,10 @@ class DashboardViewModel @Inject constructor(
         profileRepository.observeProfile(),
         clock.flatMapLatest { movementRepository.observeMonthSummary(MonthRange.current(it.toInstant().toEpochMilli())) },
         movementRepository.observeRecent(limit = 5),
-    ) { now, profile, summary, recent ->
-        DashboardUiState.from(now, profile.firstName.ifBlank { null }).copy(summary = summary, recent = recent)
+        clock.flatMapLatest { now -> fixedPaymentRepository.observeMonth(YearMonth.from(now)) { now.toLocalDate() } },
+    ) { now, profile, summary, recent, payments ->
+        DashboardUiState.from(now, profile.firstName.ifBlank { null })
+            .copy(summary = summary, recent = recent, payments = payments)
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),

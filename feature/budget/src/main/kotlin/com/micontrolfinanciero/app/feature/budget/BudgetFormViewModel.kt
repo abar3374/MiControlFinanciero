@@ -49,7 +49,7 @@ data class BudgetFormState(
 class BudgetFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val budgetRepository: BudgetRepository,
-    categoryRepository: CategoryRepository,
+    private val categoryRepository: CategoryRepository,
 ) : ViewModel() {
 
     private val editId: Long = savedStateHandle.get<Long>("id") ?: 0L
@@ -102,6 +102,16 @@ class BudgetFormViewModel @Inject constructor(
                 // Si aún no tiene nombre, se propone el de la categoría.
                 name = name.ifBlank { category?.name.orEmpty() },
             )
+        }
+    }
+
+    fun createCategory(name: String, nature: ExpenseNature) {
+        viewModelScope.launch {
+            runCatching { categoryRepository.addCategory(name, nature) }
+                .onSuccess { id ->
+                    edit { copy(categoryId = id, nature = nature.defaultClassification(), name = this.name.ifBlank { name }) }
+                }
+                .onFailure { e -> _state.update { it.copy(error = e.message ?: "No se pudo crear la categoría.") } }
         }
     }
 

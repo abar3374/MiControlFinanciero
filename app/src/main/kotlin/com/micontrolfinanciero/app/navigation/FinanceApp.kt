@@ -19,6 +19,8 @@ import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
 import com.micontrolfinanciero.app.core.model.MovementKind
 import com.micontrolfinanciero.app.feature.budget.BudgetFormRoute
 import com.micontrolfinanciero.app.feature.budget.BudgetRoute
+import com.micontrolfinanciero.app.feature.credit.FixedPaymentFormRoute
+import com.micontrolfinanciero.app.feature.credit.MonthlyPaymentsRoute
 import com.micontrolfinanciero.app.feature.dashboard.DashboardRoute
 import com.micontrolfinanciero.app.feature.expense.ExpenseFormRoute
 import com.micontrolfinanciero.app.feature.expense.IncomeFormRoute
@@ -78,6 +80,7 @@ private fun FinanceMainContent(appVersion: String) {
                     onRegisterIncome = { navController.navigate(IncomeFormDestination()) },
                     onOpenMovements = { navController.navigate(MovementsDestination) },
                     onOpenBudget = { navController.navigateToTopLevel(TopLevelDestination.BUDGET) },
+                    onOpenPayments = { navController.navigate(MonthlyPaymentsDestination) },
                     onOpenMovement = { item ->
                         if (item.kind == MovementKind.EXPENSE) {
                             navController.navigate(ExpenseFormDestination(item.id))
@@ -91,6 +94,7 @@ private fun FinanceMainContent(appVersion: String) {
                 BudgetRoute(
                     onNewBudget = { navController.navigate(BudgetFormDestination()) },
                     onOpenBudget = { id -> navController.navigate(BudgetFormDestination(id)) },
+                    onOpenPayments = { navController.navigate(MonthlyPaymentsDestination) },
                 )
             }
             composable<RegisterDestination> {
@@ -98,6 +102,7 @@ private fun FinanceMainContent(appVersion: String) {
                     onNewExpense = { navController.navigate(ExpenseFormDestination()) },
                     onNewIncome = { navController.navigate(IncomeFormDestination()) },
                     onOpenMovements = { navController.navigate(MovementsDestination) },
+                    onOpenPayments = { navController.navigate(MonthlyPaymentsDestination) },
                 )
             }
             composable<ReportsDestination> { ReportsRoute() }
@@ -106,6 +111,14 @@ private fun FinanceMainContent(appVersion: String) {
             composable<ExpenseFormDestination> { ExpenseFormRoute(onDone = back) }
             composable<IncomeFormDestination> { IncomeFormRoute(onDone = back) }
             composable<BudgetFormDestination> { BudgetFormRoute(onDone = back) }
+            composable<MonthlyPaymentsDestination> {
+                MonthlyPaymentsRoute(
+                    onBack = back,
+                    onNewPayment = { navController.navigate(FixedPaymentFormDestination()) },
+                    onEditPayment = { id -> navController.navigate(FixedPaymentFormDestination(id)) },
+                )
+            }
+            composable<FixedPaymentFormDestination> { FixedPaymentFormRoute(onDone = back) }
             composable<MovementsDestination> {
                 MovementsRoute(
                     onBack = back,

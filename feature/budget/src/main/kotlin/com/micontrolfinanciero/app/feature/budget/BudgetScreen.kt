@@ -26,6 +26,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import com.micontrolfinanciero.app.core.designsystem.component.NewCategoryDialog
+import com.micontrolfinanciero.app.core.model.ExpenseCategory
+import com.micontrolfinanciero.app.core.model.ExpenseNature
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -55,10 +65,18 @@ import com.micontrolfinanciero.app.core.designsystem.R as DesignR
 fun BudgetRoute(
     onNewBudget: () -> Unit,
     onOpenBudget: (Long) -> Unit,
+    onOpenPayments: () -> Unit,
     viewModel: BudgetViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val dialog by viewModel.dialog.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(message) {
+        val text = message ?: return@LaunchedEffect
+        snackbar.showSnackbar(text)
+        viewModel.onMessageShown()
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val summary = state.summary
@@ -79,6 +97,7 @@ fun BudgetRoute(
                     onNext = viewModel::nextMonth,
                 )
                 SummaryCard(summary)
+                PaymentsLinkCard(onOpenPayments)
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Rubros del mes", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue, modifier = Modifier.weight(1f))
@@ -114,37 +133,94 @@ fun BudgetRoute(
                 }
 
                 CategoriesSection(
-                    names = state.categories.map { it.name },
-                    onAdd = viewModel::openCategoryDialog,
+                    categories = state.categories,
+                    onAdd = viewModel::openCreateCategory,
+                    onManage = viewModel::openManageCategory,
                 )
             }
         }
+        SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp))
     }
 
-    if (dialog.visible) {
-        AlertDialog(
-            onDismissRequest = viewModel::closeCategoryDialog,
-            title = { Text("Nueva categoría") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    FinanceTextField(
-                        value = dialog.name,
-                        onValueChange = viewModel::onCategoryNameChange,
-                        label = "Nombre (ejemplo: Mascotas)",
-                        error = dialog.error,
-                        maxLength = 40,
-                    )
-                    FieldLabel("Clasificación habitual")
-                    ChoiceChips(
-                        options = CLASSIFICATIONS.map { ChipOption(it, it.label) },
-                        selected = dialog.nature,
-                        onSelect = viewModel::onCategoryNatureChange,
-                    )
-                }
-            },
-            confirmButton = { TextButton(onClick = viewModel::saveCategory) { Text("Guardar") } },
-            dismissButton = { TextButton(onClick = viewModel::closeCategoryDialog) { Text("Cancelar") } },
+    when (val d = dialog) {
+        CategoryDialog.None -> Unit
+        CategoryDialog.Create -> NewCategoryDialog(
+            natureOptions = CLASSIFICATIONS.map { ChipOption(it, it.label) },
+            initialNature = ExpenseNature.OTHER,
+            validate = { viewModel.nameError(it) },
+            onCreate = viewModel::createCategory,
+            onDismiss = viewModel::closeDialog,
         )
+        is CategoryDialog.Manage -> ManageCategoryDialog(
+            category = d.category,
+            validate = { viewModel.nameError(it, exceptId = d.category.id) },
+            onRename = { name -> viewModel.renameCategory(d.category.id, name) },
+            onToggleHidden = { viewModel.setHidden(d.category.id, !d.category.archived) },
+            onDismiss = viewModel::closeDialog,
+        )
+    }
+}
+
+@Composable
+private fun ManageCategoryDialog(
+    category: ExpenseCategory,
+    validate: (String) -> String?,
+    onRename: (String) -> Unit,
+    onToggleHidden: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(category.name) }
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Categoría") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                FinanceTextField(
+                    value = name,
+                    onValueChange = { name = it; error = null },
+                    label = "Nombre",
+                    error = error,
+                    maxLength = 40,
+                )
+                OutlinedButton(onClick = onToggleHidden, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (category.archived) "Volver a mostrar" else "Ocultar categoría")
+                }
+                Text(
+                    if (category.archived) {
+                        "Está oculta: no aparece al registrar gastos."
+                    } else {
+                        "Ocultarla no borra nada: los gastos que la usan la conservan y la puedes volver a mostrar."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = FinanceColors.MediumGray,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val problem = if (name.trim().equals(category.name, ignoreCase = false)) null else validate(name)
+                if (problem != null) error = problem else if (name.trim() != category.name) onRename(name.trim()) else onDismiss()
+            }) { Text("Guardar nombre") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } },
+    )
+}
+
+@Composable
+private fun PaymentsLinkCard(onOpenPayments: () -> Unit) {
+    FinanceCard(modifier = Modifier.clickable(role = Role.Button, onClick = onOpenPayments)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Pagos del mes", style = MaterialTheme.typography.titleSmall, color = FinanceColors.DarkBlue)
+                Text(
+                    "Arriendo, servicios y cuotas de créditos: cada mes vuelven a quedar pendientes.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = FinanceColors.MediumGray,
+                )
+            }
+            Icon(painterResource(DesignR.drawable.ic_chevron_right), contentDescription = null, tint = FinanceColors.Blue)
+        }
     }
 }
 
@@ -233,23 +309,41 @@ private fun BudgetRow(progress: BudgetProgress, onClick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CategoriesSection(names: List<String>, onAdd: () -> Unit) {
+private fun CategoriesSection(
+    categories: List<ExpenseCategory>,
+    onAdd: () -> Unit,
+    onManage: (ExpenseCategory) -> Unit,
+) {
+    val visible = categories.filter { !it.archived }
+    val hidden = categories.filter { it.archived }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Categorías", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue, modifier = Modifier.weight(1f))
             OutlinedButton(onClick = onAdd, shape = RoundedCornerShape(12.dp), modifier = Modifier.height(40.dp)) { Text("+ Nueva") }
         }
+        Text("Toca una categoría para renombrarla u ocultarla.", style = MaterialTheme.typography.bodySmall, color = FinanceColors.MediumGray)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            names.forEach { name ->
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = FinanceColors.DarkBlue,
-                    modifier = Modifier
-                        .background(FinanceColors.LightGray, RoundedCornerShape(999.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
+            visible.forEach { category -> CategoryLabel(category.name, hidden = false) { onManage(category) } }
+        }
+        if (hidden.isNotEmpty()) {
+            Text("Ocultas", style = MaterialTheme.typography.labelLarge, color = FinanceColors.MediumGray, modifier = Modifier.padding(top = 4.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                hidden.forEach { category -> CategoryLabel(category.name, hidden = true) { onManage(category) } }
             }
         }
     }
+}
+
+@Composable
+private fun CategoryLabel(name: String, hidden: Boolean, onClick: () -> Unit) {
+    Text(
+        text = name,
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (hidden) FinanceColors.MediumGray else FinanceColors.DarkBlue,
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (hidden) FinanceColors.White else FinanceColors.LightGray, RoundedCornerShape(999.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    )
 }

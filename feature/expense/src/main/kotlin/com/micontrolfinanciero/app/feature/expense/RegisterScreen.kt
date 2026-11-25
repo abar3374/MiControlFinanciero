@@ -41,6 +41,7 @@ fun RegisterRoute(
     onNewExpense: () -> Unit,
     onNewIncome: () -> Unit,
     onOpenMovements: () -> Unit,
+    onOpenPayments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -72,6 +73,14 @@ fun RegisterRoute(
             title = stringResource(R.string.register_income_title),
             description = stringResource(R.string.register_income_description),
             onClick = onNewIncome,
+        )
+        RegisterOptionCard(
+            iconRes = DesignR.drawable.ic_nav_budget,
+            accent = FinanceColors.DarkBlue,
+            tint = FinanceColors.LightGray,
+            title = "Pagos del mes",
+            description = "Arriendo, servicios y cuotas (como Sistecrédito): pagar con un toque, cada mes.",
+            onClick = onOpenPayments,
         )
         RegisterOptionCard(
             iconRes = DesignR.drawable.ic_list,
@@ -139,5 +148,5 @@ private fun RegisterOptionCard(
 @Preview(showBackground = true, widthDp = 360)
 @Composable
 private fun RegisterRoutePreview() {
-    FinanceTheme { RegisterRoute(onNewExpense = {}, onNewIncome = {}, onOpenMovements = {}) }
+    FinanceTheme { RegisterRoute(onNewExpense = {}, onNewIncome = {}, onOpenMovements = {}, onOpenPayments = {}) }
 }

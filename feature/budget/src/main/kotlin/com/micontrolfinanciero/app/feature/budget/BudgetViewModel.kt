@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,12 +31,12 @@ data class BudgetScreenState(
     val categories: List<ExpenseCategory> = emptyList(),
 )
 
-data class CategoryDialogState(
-    val visible: Boolean = false,
-    val name: String = "",
-    val nature: ExpenseNature = ExpenseNature.OTHER,
-    val error: String? = null,
-)
+/** Diálogo abierto en Presupuesto: crear una categoría o administrar una existente. */
+sealed interface CategoryDialog {
+    data object None : CategoryDialog
+    data object Create : CategoryDialog
+    data class Manage(val category: ExpenseCategory) : CategoryDialog
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -53,7 +52,7 @@ class BudgetViewModel @Inject constructor(
         range,
         range.flatMapLatest { movementRepository.observeMonthSummary(it) },
         budgetRepository.observeBudgets(),
-        categoryRepository.observeCategories(),
+        categoryRepository.observeAllCategories(),
     ) { r, summary, budgets, categories ->
         BudgetScreenState(
             loading = false,
@@ -64,28 +63,41 @@ class BudgetViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BudgetScreenState())
 
-    private val _dialog = MutableStateFlow(CategoryDialogState())
-    val dialog: StateFlow<CategoryDialogState> = _dialog
+    private val _dialog = MutableStateFlow<CategoryDialog>(CategoryDialog.None)
+    val dialog: StateFlow<CategoryDialog> = _dialog
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message
 
     fun previousMonth() { range.value = range.value.previous() }
     fun nextMonth() { range.value = range.value.next() }
 
-    fun openCategoryDialog() { _dialog.value = CategoryDialogState(visible = true) }
-    fun closeCategoryDialog() { _dialog.value = CategoryDialogState() }
-    fun onCategoryNameChange(v: String) = _dialog.update { it.copy(name = v.take(FinanceValidator.NAME_MAX), error = null) }
-    fun onCategoryNatureChange(v: ExpenseNature) = _dialog.update { it.copy(nature = v) }
+    fun openCreateCategory() { _dialog.value = CategoryDialog.Create }
+    fun openManageCategory(category: ExpenseCategory) { _dialog.value = CategoryDialog.Manage(category) }
+    fun closeDialog() { _dialog.value = CategoryDialog.None }
+    fun onMessageShown() { _message.value = null }
 
-    fun saveCategory() {
-        val d = _dialog.value
-        val error = FinanceValidator.categoryNameError(d.name, state.value.categories.map { it.name })
-        if (error != null) {
-            _dialog.update { it.copy(error = error) }
-            return
-        }
+    /** Error del nombre, comparando con las demás categorías (sin contar la que se renombra). */
+    fun nameError(name: String, exceptId: Long? = null): String? =
+        FinanceValidator.categoryNameError(name, state.value.categories.filter { it.id != exceptId && !it.archived }.map { it.name })
+
+    fun createCategory(name: String, nature: ExpenseNature) = perform("Categoría creada.") {
+        categoryRepository.addCategory(name, nature)
+    }
+
+    fun renameCategory(id: Long, name: String) = perform("Nombre actualizado.") {
+        categoryRepository.renameCategory(id, name)
+    }
+
+    fun setHidden(id: Long, hidden: Boolean) = perform(if (hidden) "Categoría oculta. Sus gastos se conservan." else "Categoría visible de nuevo.") {
+        categoryRepository.setCategoryHidden(id, hidden)
+    }
+
+    private fun perform(success: String, block: suspend () -> Unit) {
         viewModelScope.launch {
-            runCatching { categoryRepository.addCategory(d.name, d.nature) }
-                .onSuccess { closeCategoryDialog() }
-                .onFailure { _dialog.update { it.copy(error = "Ya existe una categoría con ese nombre.") } }
+            runCatching { block() }
+                .onSuccess { _message.value = success; closeDialog() }
+                .onFailure { e -> _message.value = e.message ?: "No se pudo guardar." }
         }
     }
 }

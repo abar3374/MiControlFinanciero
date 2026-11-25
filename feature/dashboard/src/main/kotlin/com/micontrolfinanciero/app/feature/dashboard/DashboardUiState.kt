@@ -1,6 +1,7 @@
 package com.micontrolfinanciero.app.feature.dashboard
 
 import com.micontrolfinanciero.app.core.model.MonthSummary
+import com.micontrolfinanciero.app.core.model.MonthlyPayment
 import com.micontrolfinanciero.app.core.model.MovementItem
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -20,6 +21,8 @@ data class DashboardUiState(
     /** Resumen del mes actual (null mientras carga). */
     val summary: MonthSummary? = null,
     val recent: List<MovementItem> = emptyList(),
+    /** Pagos fijos del mes (pendientes primero). */
+    val payments: List<MonthlyPayment> = emptyList(),
 ) {
     companion object {
         private val SPANISH = Locale.forLanguageTag("es-CO")

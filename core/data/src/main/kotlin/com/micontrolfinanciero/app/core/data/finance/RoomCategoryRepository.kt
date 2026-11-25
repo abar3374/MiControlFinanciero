@@ -1,5 +1,7 @@
 package com.micontrolfinanciero.app.core.data.finance
 
+import androidx.room.withTransaction
+import com.micontrolfinanciero.app.core.database.FinanceDatabase
 import com.micontrolfinanciero.app.core.database.dao.AuditDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
 import com.micontrolfinanciero.app.core.database.entity.AuditLogEntity
@@ -18,6 +20,7 @@ import javax.inject.Singleton
 
 @Singleton
 class RoomCategoryRepository @Inject constructor(
+    private val db: FinanceDatabase,
     private val dao: CategoryDao,
     private val auditDao: AuditDao,
 ) : CategoryRepository {
@@ -29,19 +32,60 @@ class RoomCategoryRepository @Inject constructor(
             .onStart { ensureDefaults() }
             .map { list -> list.map { it.toModel() } }
 
-    override suspend fun addCategory(name: String, nature: ExpenseNature): Long {
+    override fun observeAllCategories(): Flow<List<ExpenseCategory>> =
+        dao.observeAll()
+            .onStart { ensureDefaults() }
+            .map { list -> list.map { it.toModel() } }
+
+    override suspend fun addCategory(name: String, nature: ExpenseNature): Long = db.withTransaction {
+        val clean = FinanceValidator.clean(name)
         val now = System.currentTimeMillis()
-        val id = dao.insert(
-            ExpenseCategoryEntity(
-                name = FinanceValidator.clean(name),
-                nature = nature.name,
-                isDefault = false,
-                sortOrder = dao.maxSortOrder() + 1,
-                createdAt = now,
-            ),
-        )
-        auditDao.insert(AuditLogEntity(entity = "expense_category", entityId = id, action = "CREATE", details = "nombre=$name", at = now))
-        return id
+        val existing = dao.findByName(clean)
+        when {
+            existing == null -> {
+                val id = dao.insert(
+                    ExpenseCategoryEntity(
+                        name = clean,
+                        nature = nature.name,
+                        isDefault = false,
+                        sortOrder = dao.maxSortOrder() + 1,
+                        createdAt = now,
+                    ),
+                )
+                audit(id, "CREATE", "nombre=$clean", now)
+                id
+            }
+            existing.archived -> {
+                // Ya existía oculta: se vuelve a mostrar en vez de duplicarla.
+                dao.setArchived(existing.id, false)
+                audit(existing.id, "UPDATE", "mostrar de nuevo: ${existing.name}", now)
+                existing.id
+            }
+            else -> throw IllegalArgumentException("Ya existe una categoría con ese nombre.")
+        }
+    }
+
+    override suspend fun renameCategory(id: Long, name: String) {
+        db.withTransaction {
+            val clean = FinanceValidator.clean(name)
+            val current = dao.get(id) ?: return@withTransaction
+            val other = dao.findByName(clean)
+            if (other != null && other.id != id) throw IllegalArgumentException("Ya existe una categoría con ese nombre.")
+            dao.rename(id, clean)
+            audit(id, "UPDATE", "nombre: ${current.name} -> $clean", System.currentTimeMillis())
+        }
+    }
+
+    override suspend fun setCategoryHidden(id: Long, hidden: Boolean) {
+        db.withTransaction {
+            val current = dao.get(id) ?: return@withTransaction
+            dao.setArchived(id, hidden)
+            audit(id, "UPDATE", (if (hidden) "ocultar: " else "mostrar: ") + current.name, System.currentTimeMillis())
+        }
+    }
+
+    private suspend fun audit(id: Long, action: String, details: String, at: Long) {
+        auditDao.insert(AuditLogEntity(entity = "expense_category", entityId = id, action = action, details = details, at = at))
     }
 
     /** La primera vez crea las categorías predeterminadas (se pueden agregar más). */

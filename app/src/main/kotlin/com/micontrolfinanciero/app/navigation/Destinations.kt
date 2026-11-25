@@ -21,6 +21,8 @@ import com.micontrolfinanciero.app.core.designsystem.R as DesignR
 @Serializable data class IncomeFormDestination(val id: Long = 0L)
 @Serializable data class BudgetFormDestination(val id: Long = 0L)
 @Serializable data object MovementsDestination
+@Serializable data object MonthlyPaymentsDestination
+@Serializable data class FixedPaymentFormDestination(val id: Long = 0L)
 
 /** Las cinco entradas de la barra inferior, en orden. */
 enum class TopLevelDestination(

@@ -43,7 +43,10 @@ import com.micontrolfinanciero.app.core.designsystem.component.FinanceFormat
 import com.micontrolfinanciero.app.core.designsystem.component.MovementListItem
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
 import com.micontrolfinanciero.app.core.domain.budget.BudgetMath
+import com.micontrolfinanciero.app.core.model.Money
 import com.micontrolfinanciero.app.core.model.MonthSummary
+import com.micontrolfinanciero.app.core.model.MonthlyPayment
+import com.micontrolfinanciero.app.core.model.PaymentStatus
 import com.micontrolfinanciero.app.core.model.MovementItem
 import com.micontrolfinanciero.app.core.designsystem.R as DesignR
 
@@ -56,6 +59,7 @@ fun DashboardRoute(
     onOpenMovements: () -> Unit,
     onOpenBudget: () -> Unit,
     onOpenMovement: (MovementItem) -> Unit,
+    onOpenPayments: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,6 +78,7 @@ fun DashboardRoute(
         onOpenMovements = onOpenMovements,
         onOpenBudget = onOpenBudget,
         onOpenMovement = onOpenMovement,
+        onOpenPayments = onOpenPayments,
     )
 }
 
@@ -86,6 +91,7 @@ fun DashboardScreen(
     onOpenMovements: () -> Unit,
     onOpenBudget: () -> Unit,
     onOpenMovement: (MovementItem) -> Unit,
+    onOpenPayments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -114,7 +120,8 @@ fun DashboardScreen(
 
         val summary = state.summary
         val hasData = summary != null &&
-            (!summary.spent.isZero || !summary.income.isZero || summary.budgets.isNotEmpty() || state.recent.isNotEmpty())
+            (!summary.spent.isZero || !summary.income.isZero || summary.budgets.isNotEmpty() ||
+                state.recent.isNotEmpty() || state.payments.isNotEmpty())
 
         if (summary == null || !hasData) {
             EmptyState(
@@ -126,6 +133,7 @@ fun DashboardScreen(
         }
 
         BudgetHeroCard(summary = summary, onOpenBudget = onOpenBudget)
+        if (state.payments.isNotEmpty()) PaymentsCard(state.payments, onOpenPayments)
         IncomeVsExpenseCard(summary)
         QuickActions(onRegisterExpense, onRegisterIncome)
         if (summary.byCategory.isNotEmpty()) CategoryCard(summary)
@@ -290,6 +298,46 @@ private fun CategoryCard(summary: MonthSummary) {
                                 .background(FinanceColors.DarkBlue, RoundedCornerShape(6.dp)),
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/** Pagos del mes: lo que falta por pagar, en orden de urgencia. */
+@Composable
+private fun PaymentsCard(payments: List<MonthlyPayment>, onOpenPayments: () -> Unit) {
+    val pending = payments.filter { !it.isPaid }
+    FinanceCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Pagos del mes", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue, modifier = Modifier.weight(1f))
+            TextButton(onClick = onOpenPayments) { Text("Ver todos") }
+        }
+        if (pending.isEmpty()) {
+            Text("¡Todo pagado este mes! (${payments.size} pagos)", style = MaterialTheme.typography.bodyMedium, color = FinanceColors.Green)
+        } else {
+            Text(
+                "Faltan ${pending.size} por ${FinanceFormat.money(Money.sum(pending.map { it.payment.amount }))}",
+                style = MaterialTheme.typography.bodySmall,
+                color = FinanceColors.MediumGray,
+            )
+            pending.take(3).forEach { item ->
+                val color = when (item.status) {
+                    PaymentStatus.OVERDUE -> FinanceColors.Red
+                    PaymentStatus.DUE_SOON -> FinanceColors.Amber
+                    else -> FinanceColors.MediumGray
+                }
+                Row(modifier = Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(item.payment.name, style = MaterialTheme.typography.titleSmall, color = FinanceColors.DarkBlue)
+                        Text(
+                            "${item.status.label} · ${FinanceFormat.date(item.dueDate)}" +
+                                (item.installmentNumber?.let { " · cuota $it de ${item.payment.totalInstallments}" } ?: ""),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = color,
+                        )
+                    }
+                    Text(FinanceFormat.money(item.payment.amount), style = MaterialTheme.typography.titleSmall, color = FinanceColors.DarkBlue)
                 }
             }
         }

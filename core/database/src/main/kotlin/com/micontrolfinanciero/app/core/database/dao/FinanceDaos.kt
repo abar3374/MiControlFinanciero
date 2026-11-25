@@ -8,6 +8,9 @@ import com.micontrolfinanciero.app.core.database.entity.AuditLogEntity
 import com.micontrolfinanciero.app.core.database.entity.BudgetEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseCategoryEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseEntity
+import com.micontrolfinanciero.app.core.database.entity.FixedPaymentEntity
+import com.micontrolfinanciero.app.core.database.entity.FixedPaymentRecordEntity
+import com.micontrolfinanciero.app.core.database.entity.RecordWithExpense
 import com.micontrolfinanciero.app.core.database.entity.GroupTotal
 import com.micontrolfinanciero.app.core.database.entity.IncomeEntity
 import com.micontrolfinanciero.app.core.database.entity.MovementRow
@@ -17,6 +20,21 @@ import kotlinx.coroutines.flow.Flow
 interface CategoryDao {
     @Query("SELECT * FROM expense_category WHERE archived = 0 ORDER BY sort_order, name")
     fun observeActive(): Flow<List<ExpenseCategoryEntity>>
+
+    @Query("SELECT * FROM expense_category ORDER BY archived, sort_order, name")
+    fun observeAll(): Flow<List<ExpenseCategoryEntity>>
+
+    @Query("SELECT * FROM expense_category WHERE name = :name COLLATE NOCASE LIMIT 1")
+    suspend fun findByName(name: String): ExpenseCategoryEntity?
+
+    @Query("SELECT * FROM expense_category WHERE id = :id")
+    suspend fun get(id: Long): ExpenseCategoryEntity?
+
+    @Query("UPDATE expense_category SET name = :name WHERE id = :id")
+    suspend fun rename(id: Long, name: String)
+
+    @Query("UPDATE expense_category SET archived = :archived WHERE id = :id")
+    suspend fun setArchived(id: Long, archived: Boolean)
 
     @Query("SELECT COUNT(*) FROM expense_category")
     suspend fun count(): Int
@@ -152,6 +170,54 @@ interface MovementDao {
         includeIncomes: Boolean,
         limit: Int,
     ): Flow<List<MovementRow>>
+}
+
+@Dao
+interface FixedPaymentDao {
+    @Query("SELECT * FROM fixed_payment ORDER BY active DESC, due_day, name")
+    fun observeAll(): Flow<List<FixedPaymentEntity>>
+
+    @Query("SELECT * FROM fixed_payment WHERE id = :id")
+    suspend fun get(id: Long): FixedPaymentEntity?
+
+    @Insert
+    suspend fun insert(entity: FixedPaymentEntity): Long
+
+    @Update
+    suspend fun update(entity: FixedPaymentEntity)
+
+    /** Pagos registrados cuyo gasto sigue vigente (no anulado). */
+    @Query(
+        """
+        SELECT r.fixed_payment_id AS fixed_payment_id, r.period AS period, r.expense_id AS expense_id,
+               e.amount_cents AS amount_cents, e.occurred_at AS occurred_at
+        FROM fixed_payment_record r JOIN expense e ON e.id = r.expense_id
+        WHERE e.voided = 0
+        """,
+    )
+    fun observeRecords(): Flow<List<RecordWithExpense>>
+
+    @Query(
+        """
+        SELECT r.fixed_payment_id AS fixed_payment_id, r.period AS period, r.expense_id AS expense_id,
+               e.amount_cents AS amount_cents, e.occurred_at AS occurred_at
+        FROM fixed_payment_record r JOIN expense e ON e.id = r.expense_id
+        WHERE e.voided = 0
+        """,
+    )
+    suspend fun recordsSnapshot(): List<RecordWithExpense>
+
+    @Query("SELECT * FROM fixed_payment_record WHERE fixed_payment_id = :paymentId AND period = :period")
+    suspend fun getRecord(paymentId: Long, period: Int): FixedPaymentRecordEntity?
+
+    @Insert
+    suspend fun insertRecord(entity: FixedPaymentRecordEntity): Long
+
+    @Query("DELETE FROM fixed_payment_record WHERE id = :id")
+    suspend fun deleteRecord(id: Long)
+
+    @Query("DELETE FROM fixed_payment_record WHERE expense_id = :expenseId")
+    suspend fun deleteRecordsForExpense(expenseId: Long)
 }
 
 @Dao

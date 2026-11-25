@@ -18,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -35,9 +37,12 @@ import com.micontrolfinanciero.app.core.designsystem.component.FieldLabel
 import com.micontrolfinanciero.app.core.designsystem.component.FinanceFormat
 import com.micontrolfinanciero.app.core.designsystem.component.FinanceTextField
 import com.micontrolfinanciero.app.core.designsystem.component.MoneyField
+import com.micontrolfinanciero.app.core.designsystem.component.NewCategoryDialog
 import com.micontrolfinanciero.app.core.designsystem.component.PrimaryActionButton
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
+import com.micontrolfinanciero.app.core.domain.finance.FinanceValidator
 import com.micontrolfinanciero.app.core.domain.finance.FormField
+import com.micontrolfinanciero.app.core.model.ExpenseNature
 import com.micontrolfinanciero.app.core.model.CLASSIFICATIONS
 import com.micontrolfinanciero.app.core.model.ExpenseFrequencyType
 import java.time.LocalTime
@@ -51,6 +56,19 @@ fun BudgetFormRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    var showNewCategory by remember { mutableStateOf(false) }
+    if (showNewCategory) {
+        NewCategoryDialog(
+            natureOptions = CLASSIFICATIONS.map { ChipOption(it, it.label) },
+            initialNature = ExpenseNature.OTHER,
+            validate = { name -> FinanceValidator.categoryNameError(name, state.categories.map { it.name }) },
+            onCreate = { name, nature ->
+                viewModel.createCategory(name, nature)
+                showNewCategory = false
+            },
+            onDismiss = { showNewCategory = false },
+        )
+    }
 
     LaunchedEffect(state.closed) { if (state.closed) onDone() }
     LaunchedEffect(state.error) {
@@ -83,6 +101,8 @@ fun BudgetFormRoute(
                         options = state.categories.map { ChipOption(it.id, it.name) },
                         selected = state.categoryId,
                         onSelect = viewModel::onCategoryChange,
+                        addLabel = "+ Nueva categoría",
+                        onAdd = { showNewCategory = true },
                     )
                     FieldError(state.errors[FormField.CATEGORY])
 

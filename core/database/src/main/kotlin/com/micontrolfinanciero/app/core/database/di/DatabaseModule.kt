@@ -7,6 +7,7 @@ import com.micontrolfinanciero.app.core.database.dao.AuditDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
 import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
+import com.micontrolfinanciero.app.core.database.dao.FixedPaymentDao
 import com.micontrolfinanciero.app.core.database.dao.IncomeDao
 import com.micontrolfinanciero.app.core.database.dao.MovementDao
 import com.micontrolfinanciero.app.core.database.dao.UserProfileDao
@@ -45,4 +46,5 @@ object DatabaseModule {
     @Provides fun provideIncomeDao(db: FinanceDatabase): IncomeDao = db.incomeDao()
     @Provides fun provideMovementDao(db: FinanceDatabase): MovementDao = db.movementDao()
     @Provides fun provideAuditDao(db: FinanceDatabase): AuditDao = db.auditDao()
+    @Provides fun provideFixedPaymentDao(db: FinanceDatabase): FixedPaymentDao = db.fixedPaymentDao()
 }
