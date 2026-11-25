@@ -4,7 +4,7 @@
 > Pégalo completo al inicio de la nueva conversación junto con el prompt maestro.
 
 **Última actualización:** 2026-11-24
-**Versión:** 0.2.0 (versionCode 2)
+**Versión:** 0.3.0 (versionCode 3)
 
 ## Estado actual
 
@@ -12,8 +12,8 @@
 | --- | --- | --- |
 | 1 | Arquitectura | Terminada: compila y el usuario aprobó la interfaz (24-nov) |
 | 2 | Interfaz | En curso: personalización pedida por el usuario (perfil, Registrar con tarjetas) |
-| 3 | Base de datos | Iniciada: Room + SQLCipher con la tabla user_profile (esquema v1) |
-| 4 | Presupuestos, gastos e ingresos | Pendiente |
+| 3 | Base de datos | Hecha en lo necesario: esquema v2 (perfil, categorías, rubros, gastos, ingresos, auditoría) |
+| 4 | Presupuestos, gastos e ingresos | Entregada en 0.3.0 (compila en CI) · falta: comprobante adjunto · pendiente prueba del usuario |
 | 5 | Gastos fijos, créditos e ingresos fijos | Pendiente |
 | 6 | Notificaciones | Pendiente |
 | 7 | Reportes | Pendiente |
@@ -41,6 +41,21 @@
 - `BudgetMath` con pruebas (porcentaje, restante, balance, umbrales de alerta).
 - Respaldo automático de Android desactivado (`allowBackup=false` + `data_extraction_rules`).
 - CI en GitHub Actions: compila, prueba, lint y publica el APK DEBUG como artefacto.
+
+## Versión 0.3.0 (24-nov-2026) — Fase 4
+
+- Esquema v2 con `AutoMigration(1→2)`; esquemas guardados en `core/database/schemas/` (1.json y 2.json).
+- Tablas: expense_category, budget, expense (concept obligatorio, voided = borrado lógico), income, audit_log.
+- Repositorios: `RoomCategoryRepository` (siembra 10 categorías si la tabla está vacía),
+  `RoomBudgetRepository`, `RoomMovementRepository` (escrituras en transacción con auditoría,
+  `observeMonthSummary` combina totales del mes con Flow).
+- Rubro automático: al elegir categoría se asigna el primer rubro activo de esa categoría; al escribir
+  el concepto, si coincide con el nombre de un rubro y aún no hay categoría, se propone ese rubro.
+- Presupuesto global = suma de rubros activos que ya empezaron. Restante = global − gastado en rubros.
+  "Te queda" = ingresos − todos los gastos (no es saldo bancario).
+- Navegación: formularios y movimientos sin barra inferior (`ExpenseFormDestination(id)`, etc.).
+- Textos de las pantallas de la Fase 4 están en el código (español). Pasarlos a strings.xml
+  cuando se implemente el cambio de idioma.
 
 ## Versión 0.2.0 (24-nov-2026)
 
@@ -101,9 +116,12 @@
 
 ## Próximas tareas
 
-1. Usuario: agregar el secreto `SIGNING_KEY_PASSWORD` en GitHub; luego instalar la versión firmada
-   "Finance" y probar perfil, contraseña, huella y bloqueo.
-2. Fase 2 (Interfaz): componentes reutilizables del boceto (tarjetas de resumen, filas de
+1. Usuario: instalar 0.3.0 (pre-release v0.3.0-3-beta) encima de 0.2.0 y probar rubros, gastos,
+   ingresos, movimientos e Inicio. Confirmar que el perfil se conservó (migración 1→2).
+2. Fase 4 pendiente: adjuntar comprobante a un gasto.
+3. Fase 5: gastos fijos con vencimientos, ingresos fijos esperados (salario), créditos y cuotas
+   (Sistecrédito como crédito), calendario de pagos.
+4. Fase 2 (Interfaz, pendiente de pulir): componentes reutilizables del boceto (tarjetas de resumen, filas de
    movimiento, chips, campos de dinero), estructura visual completa de Inicio y Perfil,
    adaptación a pantallas pequeñas (360 dp) y grandes.
-3. Fase 3: Room + SQLCipher, entidades (incluidas `Income` e `IncomeSource`), migraciones y repositorios.
+

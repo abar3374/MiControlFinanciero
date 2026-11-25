@@ -2,6 +2,28 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [0.3.0] - 2026-11-24 · Fase 4: presupuestos, gastos e ingresos
+
+### Agregado
+- Base de datos v2 con migración automática desde v1 (el perfil se conserva): categorías, rubros,
+  gastos, ingresos y registro de auditoría.
+- 10 categorías predeterminadas y categorías personalizables.
+- Rubros: nombre, categoría, valor mensual, fijo u ocasional, clasificación, fecha de inicio, activo,
+  descripción y observaciones. Editar, desactivar o eliminar (los gastos se conservan sin rubro).
+- Registrar gasto: valor, "¿En qué gastaste?" obligatorio, lugar, categoría, rubro asignado
+  automáticamente, clasificación, método de pago, fecha y hora, observaciones.
+- Alertas al guardar un gasto cuando el rubro llega a 50, 75, 90 o 100 %.
+- Registrar ingreso: valor, origen obligatorio con atajos (Salario…), fijo o variable, dónde se recibió.
+- Movimientos: historial por mes con búsqueda por concepto, lugar o categoría y filtro por tipo;
+  tocar un movimiento lo abre para editar o eliminar (con confirmación y auditoría).
+- Presupuesto: presupuesto global del mes, restante, gastos sin rubro y avance de cada rubro.
+- Inicio: disponible del presupuesto, ingresos vs. gastos y "te queda", gastos por categoría,
+  actividad reciente y accesos rápidos a gasto e ingreso.
+- 7 pruebas nuevas (validación de formularios y periodos mensuales).
+
+### Pendiente de la Fase 4
+- Adjuntar comprobante (foto o archivo) a un gasto.
+
 ## [0.2.0] - 2026-11-24 · Perfil, seguridad y Registrar
 
 ### Agregado
