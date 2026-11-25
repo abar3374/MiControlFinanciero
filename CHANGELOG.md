@@ -2,6 +2,24 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [0.4.0] - 2026-11-24 · Pagos del mes y categorías
+
+### Agregado
+- Pagos del mes: pagos fijos (arriendo, servicios) y créditos con cuotas (como Sistecrédito).
+  Cada mes vuelven a aparecer como pendientes; "Pagar" crea el gasto (concepto, categoría, rubro)
+  y lo marca pagado; "Deshacer pago" anula ese gasto. Estados: pendiente, vence pronto (5 días),
+  vencido y pagado. La fecha nunca marca un pago como hecho.
+- Créditos: total de cuotas y cuotas ya pagadas; muestra "cuota X de N" y, al pagar la última,
+  queda saldado y deja de aparecer desde el mes siguiente. El historial y los gastos se conservan.
+- Base de datos v3 (migración automática desde v2): fixed_payment y fixed_payment_record.
+- "+ Nueva categoría" dentro de los formularios de gasto, rubro y pago fijo.
+- Presupuesto: renombrar, ocultar y volver a mostrar categorías (ocultar no borra gastos).
+- Inicio: tarjeta "Pagos del mes" con lo que falta por pagar. Accesos desde Registrar y Presupuesto.
+- 6 pruebas nuevas del calendario de pagos.
+
+### Cambiado
+- Eliminar un gasto que vino de un pago fijo deja ese mes otra vez pendiente.
+
 ## [0.3.0] - 2026-11-24 · Fase 4: presupuestos, gastos e ingresos
 
 ### Agregado

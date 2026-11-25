@@ -4,7 +4,7 @@
 > Pégalo completo al inicio de la nueva conversación junto con el prompt maestro.
 
 **Última actualización:** 2026-11-24
-**Versión:** 0.3.0 (versionCode 3)
+**Versión:** 0.4.0 (versionCode 4)
 
 ## Estado actual
 
@@ -14,7 +14,7 @@
 | 2 | Interfaz | En curso: personalización pedida por el usuario (perfil, Registrar con tarjetas) |
 | 3 | Base de datos | Hecha en lo necesario: esquema v2 (perfil, categorías, rubros, gastos, ingresos, auditoría) |
 | 4 | Presupuestos, gastos e ingresos | Entregada en 0.3.0 (compila en CI) · falta: comprobante adjunto · pendiente prueba del usuario |
-| 5 | Gastos fijos, créditos e ingresos fijos | Pendiente |
+| 5 | Gastos fijos, créditos e ingresos fijos | En curso: pagos fijos y créditos con cuotas (0.4.0). Falta: ingresos fijos esperados, frecuencias distintas a mensual, tasa de interés, calendario |
 | 6 | Notificaciones | Pendiente |
 | 7 | Reportes | Pendiente |
 | 8 | Seguridad | Adelantada en parte: usuario/contraseña, huella, bloqueo, clave en Keystore |
@@ -41,6 +41,22 @@
 - `BudgetMath` con pruebas (porcentaje, restante, balance, umbrales de alerta).
 - Respaldo automático de Android desactivado (`allowBackup=false` + `data_extraction_rules`).
 - CI en GitHub Actions: compila, prueba, lint y publica el APK DEBUG como artefacto.
+
+## Versión 0.4.0 (24-nov-2026) — Pagos del mes
+
+Pedido del usuario: "los gastos registrados se deben reiniciar cada mes; si ya se saldó, eliminar".
+Se le preguntó y respondió que los gastos deben guardarse y que se le mostrara la mejor opción.
+Decisión: **Pagos del mes** — nada se borra; los pagos fijos se renuevan cada mes y los créditos
+saldados dejan de aparecer.
+
+- `FixedPaymentSchedule` (dominio, con pruebas): visible si activo, ya empezó y, si es crédito,
+  `cuotas pagadas antes del mes < total`. Estado del mes solo por registro de pago.
+- Esquema v3: `fixed_payment` (period = año*100+mes), `fixed_payment_record`
+  (único por pago y mes, enlaza el gasto creado).
+- `RoomFixedPaymentRepository.markPaid` crea el gasto y el registro en una transacción;
+  `undoPaid` anula el gasto; `RoomMovementRepository.deleteExpense` borra el registro enlazado.
+- Categorías: `addCategory` reactiva una oculta con el mismo nombre; `renameCategory`; `setCategoryHidden`.
+- Pantallas en `feature/credit`: `MonthlyPaymentsRoute`, `FixedPaymentFormRoute`.
 
 ## Versión 0.3.0 (24-nov-2026) — Fase 4
 
@@ -116,11 +132,10 @@
 
 ## Próximas tareas
 
-1. Usuario: instalar 0.3.0 (pre-release v0.3.0-3-beta) encima de 0.2.0 y probar rubros, gastos,
-   ingresos, movimientos e Inicio. Confirmar que el perfil se conservó (migración 1→2).
+1. Usuario: instalar 0.4.0 (pre-release v0.4.0-4-beta) y probar pagos del mes, créditos y categorías.
 2. Fase 4 pendiente: adjuntar comprobante a un gasto.
-3. Fase 5: gastos fijos con vencimientos, ingresos fijos esperados (salario), créditos y cuotas
-   (Sistecrédito como crédito), calendario de pagos.
+3. Fase 5 (resto): ingresos fijos esperados (salario), frecuencias quincenal/bimestral/etc.,
+   tasa de interés y saldo de créditos, calendario de pagos. Fase 6: recordatorios 7/3/1/0 días.
 4. Fase 2 (Interfaz, pendiente de pulir): componentes reutilizables del boceto (tarjetas de resumen, filas de
    movimiento, chips, campos de dinero), estructura visual completa de Inicio y Perfil,
    adaptación a pantallas pequeñas (360 dp) y grandes.
