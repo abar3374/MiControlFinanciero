@@ -176,6 +176,8 @@ fun ProfileRoute(
                     onHourChange = viewModel::setReminderHour,
                 )
 
+                UpdatesSection()
+
                 RegionSection()
 
                 AboutSection(appVersion = appVersion)

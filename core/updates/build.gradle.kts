@@ -1,5 +1,5 @@
-// :core:updates — consulta de GitHub Releases, descarga, verificación de firma y SHA-256.
-// Fase 1: solo existe el módulo. Se implementa en la Fase 9.
+// :core:updates — consulta de GitHub Releases (solo el repositorio oficial), descarga,
+// verificación de SHA-256 y del certificado de firma, e instalación con confirmación del usuario.
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -18,3 +18,9 @@ android {
 }
 
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
+
+dependencies {
+    api(projects.core.domain)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.core.ktx)
+}

@@ -2,6 +2,19 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [0.9.0] - 2026-11-28 · Fase 9: actualizaciones
+
+### Agregado
+- Perfil → Actualizaciones: "Buscar actualización" consulta SOLO el repositorio oficial en GitHub.
+  Canales Estable y Pruebas (beta). Muestra versión, notas y tamaño.
+- Descarga con progreso y verificaciones antes de instalar: enlace oficial por HTTPS, huella
+  SHA-256, mismo paquete, versión mayor a la instalada (nunca baja de versión) y misma firma que
+  la app instalada (certificado oficial de Finance). Si algo no cuadra, se borra el archivo.
+- Instalación con la ventana de Android (el usuario confirma); sin instalación silenciosa.
+- Permisos nuevos: INTERNET (solo para actualizaciones) y REQUEST_INSTALL_PACKAGES. Solo HTTPS.
+- CI: al subir la etiqueta vX.Y.Z se publica la versión estable firmada con su .sha256.
+- 4 pruebas de selección de versiones, enlaces y huellas.
+
 ## [0.8.0] - 2026-11-28 · Fase 8: seguridad y respaldo
 
 ### Agregado

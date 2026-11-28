@@ -28,6 +28,7 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.security)
     implementation(projects.core.notifications)
+    implementation(projects.core.updates)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.hilt.android)

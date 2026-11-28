@@ -4,7 +4,7 @@
 > Pégalo completo al inicio de la nueva conversación junto con el prompt maestro.
 
 **Última actualización:** 2026-11-28
-**Versión:** 0.8.0 (versionCode 8)
+**Versión:** 0.9.0 (versionCode 9)
 
 ## Estado actual
 
@@ -18,7 +18,7 @@
 | 6 | Notificaciones | Terminada (0.6.0) |
 | 7 | Reportes | Terminada (0.7.0) |
 | 8 | Seguridad | Terminada (0.8.0): contraseña, huella, bloqueo configurable, FLAG_SECURE, BD cifrada, respaldo cifrado, auditoría |
-| 9 | Actualizaciones | Pendiente |
+| 9 | Actualizaciones | Terminada (0.9.0): GitHub Releases, canales, SHA-256, firma, sin bajar versión |
 | 10 | Pruebas y publicación | Pendiente |
 
 **Fase terminada:** Fase 1. El usuario pidió avanzar con perfil, seguridad y Registrar (0.2.0).
@@ -52,6 +52,8 @@
 - 0.8.0 (Fase 8): bloqueo configurable, ocultar pantalla, respaldo cifrado .fbk (BackupCrypto en
   dominio; RoomBackupRepository vuelca todas las tablas a JSON y restaura en una transacción),
   historial de auditoría, AutoLockGuard para selectores/cámara.
+- 0.9.0 (Fase 9): core:updates (AppUpdater) + UpdateSelector en dominio. Estable = release normal
+  creada al subir la etiqueta vX.Y.Z; Pruebas = pre-releases -beta de cada push a main.
 
 ## Versión 0.4.0 (24-nov-2026) — Pagos del mes
 
