@@ -2,11 +2,17 @@
 
 Aplicación Android para controlar gastos e ingresos personales: presupuestos por rubro,
 gastos fijos y ocasionales, créditos y cuotas, recordatorios de pago y reportes de
-"¿en qué se fue la plata?". Todo funciona sin Internet y los datos no salen del teléfono.
+"¿en qué se fue la plata?". Todo funciona sin Internet y los datos no salen del teléfono
+(la app solo se conecta a GitHub cuando el usuario toca "Buscar actualización").
+
+- **Manual de uso:** [docs/MANUAL.md](docs/MANUAL.md)
+- **Cómo publicar una versión:** [docs/PUBLICAR.md](docs/PUBLICAR.md)
+- **Descargar:** [Releases](https://github.com/abar3374/MiControlFinanciero/releases) (la versión estable
+  más reciente está marcada como *Latest*).
 
 - **Paquete:** `com.micontrolfinanciero.app`
 - **Android mínimo:** 8.0 (API 26)
-- **Tecnología:** Kotlin, Jetpack Compose, Material 3, Hilt, Room (desde la Fase 3)
+- **Tecnología:** Kotlin, Jetpack Compose, Material 3, Hilt, Room + SQLCipher, WorkManager, Coroutines/Flow
 - **Estado:** ver [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
 ## Cómo abrir y ejecutar el proyecto
@@ -30,23 +36,24 @@ El APK queda en `app/build/outputs/apk/debug/`.
 ## Estructura
 
 ```
-app/                 Actividad principal, navegación, barra inferior, Hilt
-core/model           Modelos puros: Money (centavos), MoneyFormat, clasificaciones
-core/domain          Reglas de negocio: BudgetMath (porcentajes, restante, balance)
-core/designsystem    Colores, tipografía, formas, íconos y componentes Compose
-core/database        Room + SQLCipher (Fase 3)
-core/data            Repositorios (Fase 3)
-core/security        Keystore, PIN, biometría, respaldo cifrado (Fase 8)
-core/notifications   Recordatorios con WorkManager (Fase 6)
-core/updates         Actualizaciones desde GitHub Releases (Fase 9)
-core/reports         Cálculos y exportación PDF / Excel (Fase 7)
+app/                 Actividad principal, navegación, barra inferior, Hilt, WorkManager
+core/model           Modelos puros: Money (centavos), MoneyFormat, clasificaciones, ajustes
+core/domain          Reglas de negocio puras y probadas: presupuesto, validaciones, calendario de
+                     pagos, recordatorios, reportes, Excel, cifrado de respaldos, actualizaciones
+core/designsystem    Colores, tipografía, componentes Compose y gráficas (Canvas)
+core/database        Room + SQLCipher (base de datos cifrada), migraciones automáticas
+core/data            Repositorios: Room, archivos privados, respaldo y auditoría
+core/security        Clave de la base de datos en Android Keystore, huella (BiometricPrompt)
+core/notifications   Recordatorios de pago con WorkManager
+core/updates         Actualizaciones verificadas desde GitHub Releases
+core/reports         Exportación de reportes a PDF
 feature/dashboard    Inicio
-feature/budget       Presupuesto, rubros, gastos e ingresos fijos
-feature/expense      Registrar gasto o ingreso, historial
-feature/credit       Créditos y obligaciones (Fase 5)
-feature/reports      Reportes
-feature/profile      Perfil y ajustes
-feature/lock         Bloqueo con PIN / huella (Fase 8)
+feature/budget       Presupuesto, rubros y categorías
+feature/expense      Registrar gasto o ingreso, comprobantes, historial
+feature/credit       Pagos del mes, pagos fijos, créditos e ingresos esperados
+feature/reports      Reportes con filtros, gráficas y exportación
+feature/profile      Perfil, recordatorios, seguridad, respaldo, auditoría, actualizaciones
+feature/lock         Pantalla de bloqueo (contraseña o huella)
 ```
 
 ## Reglas del proyecto

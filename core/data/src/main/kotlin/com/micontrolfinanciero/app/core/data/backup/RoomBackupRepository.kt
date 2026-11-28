@@ -90,7 +90,8 @@ class RoomBackupRepository @Inject constructor(
         val tables = root.getJSONObject("tables")
 
         // 1) Base de datos en una sola transacción.
-        db.runInTransaction {
+        db.runInTransaction(
+            Runnable {
             sdb.execSQL("PRAGMA defer_foreign_keys = ON")
             val current = userTables(sdb)
             current.forEach { sdb.execSQL("DELETE FROM `$it`") }
@@ -107,7 +108,8 @@ class RoomBackupRepository @Inject constructor(
                 }
             }
             audit(sdb, "UPDATE", "Datos restaurados desde un respaldo del ${java.time.Instant.ofEpochMilli(info.createdAt)} (versión ${info.appVersion})")
-        }
+            },
+        )
 
         // 2) Archivos: se reemplazan las carpetas privadas por las del respaldo.
         fileFolders.forEach { folder -> File(context.filesDir, folder).listFiles()?.forEach { it.delete() } }

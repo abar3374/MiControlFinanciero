@@ -158,6 +158,13 @@ object ReminderNotifications {
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(publicVersion)
             .build()
+        // Android 13+: sin permiso de notificaciones no se intenta mostrar nada.
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         try {
             NotificationManagerCompat.from(context).notify(reminder.notificationId, notification)
         } catch (e: SecurityException) {

@@ -64,17 +64,26 @@ class SecurityViewModel @Inject constructor(
     /** Contraseña del respaldo en curso: solo en memoria y se borra al terminar. */
     private var pendingPassword: CharArray? = null
 
-    fun setAutoLock(minutes: Int) = viewModelScope.launch { settingsRepository.update { it.copy(autoLockMinutes = minutes) } }
-    fun setSecureScreen(on: Boolean) = viewModelScope.launch { settingsRepository.update { it.copy(secureScreen = on) } }
+    fun setAutoLock(minutes: Int) {
+        viewModelScope.launch { settingsRepository.update { it.copy(autoLockMinutes = minutes) } }
+    }
+
+    fun setSecureScreen(on: Boolean) {
+        viewModelScope.launch { settingsRepository.update { it.copy(secureScreen = on) } }
+    }
 
     fun backupFileName() = "finance-respaldo-${LocalDate.now()}.fbk"
 
-    fun openCreate() = _state.update { it.copy(dialog = BackupDialog.CreatePassword, passwordError = null) }
+    fun openCreate() {
+        _state.update { it.copy(dialog = BackupDialog.CreatePassword, passwordError = null) }
+    }
     fun dismiss() {
         clearPassword()
         _state.update { it.copy(dialog = BackupDialog.None, passwordError = null) }
     }
-    fun onMessageShown() = _state.update { it.copy(message = null) }
+    fun onMessageShown() {
+        _state.update { it.copy(message = null) }
+    }
 
     /** Valida la contraseña; si sirve, la pantalla abre el selector para guardar el archivo. */
     fun confirmCreatePassword(password: String, confirmation: String): Boolean {

@@ -92,12 +92,14 @@ fun SecurityRoute(appVersion: String, onBack: () -> Unit, viewModel: SecurityVie
                     )
                 }
                 item {
-                    Text("Historial de cambios", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue)
-                    Text(
-                        "Cada gasto, ingreso, rubro o ajuste que se crea, cambia o elimina queda registrado aquí. Últimos 200.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = FinanceColors.MediumGray,
-                    )
+                    Column {
+                        Text("Historial de cambios", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue)
+                        Text(
+                            "Cada gasto, ingreso, rubro o ajuste que se crea, cambia o elimina queda registrado aquí. Últimos 200.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = FinanceColors.MediumGray,
+                        )
+                    }
                 }
                 if (audit.isEmpty()) {
                     item { Text("Aún no hay cambios registrados.", color = FinanceColors.MediumGray) }
