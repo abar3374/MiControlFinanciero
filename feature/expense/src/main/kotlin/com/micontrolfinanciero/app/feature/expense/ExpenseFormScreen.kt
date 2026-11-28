@@ -1,5 +1,6 @@
 package com.micontrolfinanciero.app.feature.expense
 
+import com.micontrolfinanciero.app.core.domain.security.AutoLockGuard
 import android.content.Context
 import android.content.Intent
 import android.provider.OpenableColumns
@@ -253,7 +254,7 @@ private fun AttachmentsSection(state: ExpenseFormState, viewModel: ExpenseFormVi
         AttachmentRow(name = p.name + " (se guarda con el gasto)", onOpen = null, onRemove = { viewModel.removePending(p) })
     }
     OutlinedButton(
-        onClick = { picker.launch(arrayOf("image/*", "application/pdf")) },
+        onClick = { AutoLockGuard.allowExternalScreen(); picker.launch(arrayOf("image/*", "application/pdf")) },
         enabled = !state.attaching,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -274,6 +275,7 @@ internal fun openPrivateFile(context: Context, path: String, mimeType: String) {
     runCatching {
         val uri = FileProvider.getUriForFile(context, context.packageName + ".files", File(path))
         val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mimeType).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        AutoLockGuard.allowExternalScreen()
         context.startActivity(Intent.createChooser(intent, "Abrir comprobante"))
     }
 }

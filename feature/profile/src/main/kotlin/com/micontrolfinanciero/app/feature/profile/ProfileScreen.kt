@@ -1,5 +1,11 @@
 package com.micontrolfinanciero.app.feature.profile
 
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.clickable
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -44,6 +50,7 @@ import com.micontrolfinanciero.app.core.security.findFragmentActivity
 @Composable
 fun ProfileRoute(
     appVersion: String,
+    onOpenSecurity: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -114,6 +121,7 @@ fun ProfileRoute(
                     profile = state.profile,
                     photoBusy = state.photoBusy,
                     onPickPhoto = {
+                        com.micontrolfinanciero.app.core.domain.security.AutoLockGuard.allowExternalScreen()
                         pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                     onRemovePhoto = viewModel::removePhoto,
@@ -144,6 +152,8 @@ fun ProfileRoute(
                     onCancel = viewModel::cancelEditCredentials,
                     onBiometricToggle = onBiometricToggle,
                 )
+
+                SecurityLinkCard(onClick = onOpenSecurity)
 
                 RemindersSection(
                     settings = state.settings,
@@ -190,5 +200,29 @@ internal fun openNotificationSettings(context: Context) {
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName))
         }
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
+
+/** Acceso a bloqueo automático, ocultar pantalla, respaldo cifrado e historial (Fase 8). */
+@Composable
+private fun SecurityLinkCard(onClick: () -> Unit) {
+    com.micontrolfinanciero.app.core.designsystem.component.FinanceCard(
+        modifier = Modifier.clickable(onClickLabel = "Abrir seguridad y respaldo", onClick = onClick),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Bloqueo, respaldo e historial", style = MaterialTheme.typography.bodyLarge, color = com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors.DarkBlue)
+                Text(
+                    "Tiempo de bloqueo, ocultar pantalla, respaldo cifrado y registro de cambios.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors.MediumGray,
+                )
+            }
+            Icon(
+                painterResource(com.micontrolfinanciero.app.core.designsystem.R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors.MediumGray,
+            )
+        }
     }
 }

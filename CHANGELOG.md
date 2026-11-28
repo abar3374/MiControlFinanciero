@@ -2,6 +2,23 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [0.8.0] - 2026-11-28 · Fase 8: seguridad y respaldo
+
+### Agregado
+- Perfil → "Bloqueo, respaldo e historial":
+  - Bloqueo automático configurable: siempre, 1, 5 o 15 minutos fuera de la app.
+  - Ocultar pantalla (activado por defecto): impide capturas y oculta el contenido en recientes.
+  - Respaldo cifrado (AES-256-GCM, clave derivada de tu contraseña con PBKDF2 210.000 iteraciones):
+    todos los datos, la foto y los comprobantes en un archivo .fbk que guardas donde quieras.
+  - Restaurar: muestra qué contiene el respaldo antes de reemplazar; se hace en una sola
+    transacción (si falla, tus datos no cambian). Respaldos de versiones más nuevas se rechazan.
+  - Historial de cambios (auditoría) de solo lectura: últimos 200.
+- 3 pruebas del cifrado de respaldos (contraseña errada y archivo alterado se rechazan).
+
+### Corregido
+- Volver de la cámara, el selector de archivos o un comprobante abierto ya no bloquea la app
+  a mitad del proceso (se perdía el archivo elegido).
+
 ## [0.7.0] - 2026-11-28 · Fase 7: reportes
 
 ### Agregado

@@ -1,5 +1,6 @@
 package com.micontrolfinanciero.app.feature.reports
 
+import com.micontrolfinanciero.app.core.domain.security.AutoLockGuard
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -147,12 +148,12 @@ fun ReportsRoute(modifier: Modifier = Modifier, viewModel: ReportsViewModel = hi
                 val enabled = report != null && (report.expenseCount > 0 || report.incomes.isNotEmpty())
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedButton(
-                        onClick = { pdfLauncher.launch(viewModel.suggestedFileName(ExportFormat.PDF)) },
+                        onClick = { AutoLockGuard.allowExternalScreen(); pdfLauncher.launch(viewModel.suggestedFileName(ExportFormat.PDF)) },
                         enabled = enabled,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) { Text("PDF") }
                     OutlinedButton(
-                        onClick = { xlsxLauncher.launch(viewModel.suggestedFileName(ExportFormat.EXCEL)) },
+                        onClick = { AutoLockGuard.allowExternalScreen(); xlsxLauncher.launch(viewModel.suggestedFileName(ExportFormat.EXCEL)) },
                         enabled = enabled,
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                     ) { Text("Excel") }

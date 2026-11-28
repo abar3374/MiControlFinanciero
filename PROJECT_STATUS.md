@@ -4,7 +4,7 @@
 > Pégalo completo al inicio de la nueva conversación junto con el prompt maestro.
 
 **Última actualización:** 2026-11-28
-**Versión:** 0.7.0 (versionCode 7)
+**Versión:** 0.8.0 (versionCode 8)
 
 ## Estado actual
 
@@ -17,7 +17,7 @@
 | 5 | Gastos fijos, créditos e ingresos fijos | Terminada (0.4.0 – 0.5.0) |
 | 6 | Notificaciones | Terminada (0.6.0) |
 | 7 | Reportes | Terminada (0.7.0) |
-| 8 | Seguridad | Adelantada en parte: usuario/contraseña, huella, bloqueo, clave en Keystore |
+| 8 | Seguridad | Terminada (0.8.0): contraseña, huella, bloqueo configurable, FLAG_SECURE, BD cifrada, respaldo cifrado, auditoría |
 | 9 | Actualizaciones | Pendiente |
 | 10 | Pruebas y publicación | Pendiente |
 
@@ -49,6 +49,9 @@
   enviados para no repetir, notificaciones privadas que abren Pagos del mes.
 - 0.7.0 (Fase 7): Reportes por periodo con filtros, gráficas Canvas y exportación PDF / Excel.
   Cálculos en core:domain (ReportCalculator, XlsxWriter) con pruebas; PDF en core:reports.
+- 0.8.0 (Fase 8): bloqueo configurable, ocultar pantalla, respaldo cifrado .fbk (BackupCrypto en
+  dominio; RoomBackupRepository vuelca todas las tablas a JSON y restaura en una transacción),
+  historial de auditoría, AutoLockGuard para selectores/cámara.
 
 ## Versión 0.4.0 (24-nov-2026) — Pagos del mes
 

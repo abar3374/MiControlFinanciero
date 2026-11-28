@@ -50,6 +50,12 @@ abstract class DataModule {
     abstract fun bindAttachmentRepository(impl: RoomAttachmentRepository): AttachmentRepository
 
     @Binds
+    abstract fun bindBackupRepository(impl: com.micontrolfinanciero.app.core.data.backup.RoomBackupRepository): com.micontrolfinanciero.app.core.domain.backup.BackupRepository
+
+    @Binds
+    abstract fun bindAuditRepository(impl: com.micontrolfinanciero.app.core.data.backup.RoomAuditRepository): com.micontrolfinanciero.app.core.domain.backup.AuditRepository
+
+    @Binds
     abstract fun bindReportRepository(impl: RoomReportRepository): ReportRepository
 
     @Binds

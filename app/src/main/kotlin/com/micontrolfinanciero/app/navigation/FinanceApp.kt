@@ -35,6 +35,7 @@ import com.micontrolfinanciero.app.feature.lock.LockRoute
 import com.micontrolfinanciero.app.feature.lock.LockState
 import com.micontrolfinanciero.app.feature.lock.LockStatusScreen
 import com.micontrolfinanciero.app.feature.profile.ProfileRoute
+import com.micontrolfinanciero.app.feature.profile.SecurityRoute
 import com.micontrolfinanciero.app.feature.reports.ReportsRoute
 
 /**
@@ -123,7 +124,10 @@ private fun FinanceMainContent(appVersion: String, pendingOpen: StateFlow<String
                 )
             }
             composable<ReportsDestination> { ReportsRoute() }
-            composable<ProfileDestination> { ProfileRoute(appVersion = appVersion) }
+            composable<ProfileDestination> {
+                ProfileRoute(appVersion = appVersion, onOpenSecurity = { navController.navigate(SecurityDestination) })
+            }
+            composable<SecurityDestination> { SecurityRoute(appVersion = appVersion, onBack = back) }
 
             composable<ExpenseFormDestination> { ExpenseFormRoute(onDone = back) }
             composable<IncomeFormDestination> { IncomeFormRoute(onDone = back) }

@@ -1,6 +1,8 @@
 package com.micontrolfinanciero.app.feature.lock
 
+import com.micontrolfinanciero.app.core.domain.finance.SettingsRepository
 import com.micontrolfinanciero.app.core.domain.profile.UserProfileRepository
+import com.micontrolfinanciero.app.core.domain.security.AutoLockGuard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,12 +32,13 @@ sealed interface LockState {
 /**
  * Decide cuándo se muestra la pantalla de bloqueo:
  *  - al abrir la app, si el usuario ya creó contraseña;
- *  - al volver a la app después de [AUTO_LOCK_MILLIS] en segundo plano.
+ *  - al volver a la app después del tiempo elegido en Ajustes (0, 1, 5 o 15 minutos).
  * Si no hay contraseña, la app abre directo (el usuario la crea en Perfil).
  */
 @Singleton
 class AppLockManager @Inject constructor(
     repository: UserProfileRepository,
+    settingsRepository: SettingsRepository,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -44,8 +47,14 @@ class AppLockManager @Inject constructor(
 
     @Volatile private var hasPassword = false
     @Volatile private var backgroundedAt: Long? = null
+    @Volatile private var autoLockMillis: Long = DEFAULT_AUTO_LOCK_MILLIS
 
     init {
+        scope.launch {
+            settingsRepository.observeSettings()
+                .catch { /* si no se pueden leer, queda el valor por defecto */ }
+                .collect { autoLockMillis = it.autoLockMinutes.coerceAtLeast(0) * 60_000L }
+        }
         scope.launch {
             repository.observeProfile()
                 .catch { error ->
@@ -73,13 +82,15 @@ class AppLockManager @Inject constructor(
     fun onAppForegrounded(nowMillis: Long) {
         val since = backgroundedAt ?: return
         backgroundedAt = null
-        if (hasPassword && nowMillis - since >= AUTO_LOCK_MILLIS) {
+        // Volver del selector de archivos o la cámara que abrió la propia app no bloquea.
+        if (AutoLockGuard.consume()) return
+        if (hasPassword && nowMillis - since >= autoLockMillis) {
             _state.value = LockState.Locked
         }
     }
 
     companion object {
-        /** Bloqueo automático tras 1 minuto fuera de la app (configurable en la Fase 8). */
-        const val AUTO_LOCK_MILLIS = 60_000L
+        /** Valor por defecto: 1 minuto fuera de la app. */
+        const val DEFAULT_AUTO_LOCK_MILLIS = 60_000L
     }
 }
