@@ -1,11 +1,18 @@
 package com.micontrolfinanciero.app.core.domain.finance
 
+import com.micontrolfinanciero.app.core.model.CreditSummary
+import com.micontrolfinanciero.app.core.model.ExpectedIncome
+import com.micontrolfinanciero.app.core.model.ExpectedIncomeRecord
 import com.micontrolfinanciero.app.core.model.FixedPayment
+import com.micontrolfinanciero.app.core.model.IncomeStatus
+import com.micontrolfinanciero.app.core.model.Money
+import com.micontrolfinanciero.app.core.model.MonthlyIncome
 import com.micontrolfinanciero.app.core.model.FixedPaymentRecord
 import com.micontrolfinanciero.app.core.model.MonthlyPayment
 import com.micontrolfinanciero.app.core.model.PaymentStatus
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 
 /**
  * Reglas de los pagos del mes:
@@ -27,8 +34,15 @@ object FixedPaymentSchedule {
     fun paidBefore(payment: FixedPayment, month: YearMonth, records: List<FixedPaymentRecord>): Int =
         payment.initialPaidInstallments + records.count { it.fixedPaymentId == payment.id && it.month < month }
 
+    /** true si en [month] toca pagar según la frecuencia (cada 1, 2, 3, 6 o 12 meses). */
+    fun isDueMonth(startMonth: YearMonth, intervalMonths: Int, month: YearMonth): Boolean {
+        if (month < startMonth) return false
+        val diff = ChronoUnit.MONTHS.between(startMonth, month)
+        return diff % intervalMonths.coerceAtLeast(1) == 0L
+    }
+
     fun isVisible(payment: FixedPayment, month: YearMonth, records: List<FixedPaymentRecord>): Boolean {
-        if (!payment.active || month < payment.startMonth) return false
+        if (!payment.active || !isDueMonth(payment.startMonth, payment.intervalMonths, month)) return false
         val total = payment.totalInstallments ?: return true
         return paidBefore(payment, month, records) < total
     }
@@ -65,6 +79,47 @@ object FixedPaymentSchedule {
             remainingAfter = total?.let { it - before - 1 },
         )
     }
+
+    /** Cuánto se ha pagado de un crédito y cuánto falta (null si no es crédito). */
+    fun creditSummary(payment: FixedPayment, records: List<FixedPaymentRecord>): CreditSummary? {
+        val total = payment.totalInstallments ?: return null
+        val own = records.filter { it.fixedPaymentId == payment.id }
+        val paid = (payment.initialPaidInstallments + own.size).coerceAtMost(total)
+        val totalPaid = Money(payment.amount.cents * payment.initialPaidInstallments) + Money.sum(own.map { it.amount })
+        val remaining = total - paid
+        return CreditSummary(
+            totalInstallments = total,
+            paidInstallments = paid,
+            totalPaid = totalPaid,
+            estimatedBalance = Money(payment.amount.cents * remaining),
+            percentPaid = if (total == 0) 100 else paid * 100 / total,
+        )
+    }
+
+    // ------------------------------------------------------------------ Ingresos esperados
+
+    fun incomeDate(income: ExpectedIncome, month: YearMonth): LocalDate =
+        month.atDay(income.day.coerceIn(1, month.lengthOfMonth()))
+
+    /** Ingresos esperados del mes: recibidos o pendientes (atrasados si ya pasó el día). */
+    fun incomesForMonth(
+        incomes: List<ExpectedIncome>,
+        records: List<ExpectedIncomeRecord>,
+        month: YearMonth,
+        today: LocalDate,
+    ): List<MonthlyIncome> = incomes
+        .filter { it.active && isDueMonth(it.startMonth, it.intervalMonths, month) }
+        .map { income ->
+            val record = records.firstOrNull { it.expectedIncomeId == income.id && it.month == month }
+            val date = incomeDate(income, month)
+            val status = when {
+                record != null -> IncomeStatus.RECEIVED
+                today.isAfter(date) -> IncomeStatus.LATE
+                else -> IncomeStatus.EXPECTED
+            }
+            MonthlyIncome(income, month, date, status, record)
+        }
+        .sortedBy { it.date }
 
     private fun PaymentStatus.ordinalForSort(): Int = when (this) {
         PaymentStatus.OVERDUE -> 0

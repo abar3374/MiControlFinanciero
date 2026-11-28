@@ -2,9 +2,17 @@ package com.micontrolfinanciero.app.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Upsert
 import androidx.room.Query
 import androidx.room.Update
+import com.micontrolfinanciero.app.core.database.entity.AppSettingEntity
+import com.micontrolfinanciero.app.core.database.entity.AttachmentEntity
 import com.micontrolfinanciero.app.core.database.entity.AuditLogEntity
+import com.micontrolfinanciero.app.core.database.entity.ExpectedIncomeEntity
+import com.micontrolfinanciero.app.core.database.entity.ExpectedIncomeRecordEntity
+import com.micontrolfinanciero.app.core.database.entity.IncomeRecordWithIncome
+import com.micontrolfinanciero.app.core.database.entity.NotificationLogEntity
 import com.micontrolfinanciero.app.core.database.entity.BudgetEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseCategoryEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseEntity
@@ -224,4 +232,83 @@ interface FixedPaymentDao {
 interface AuditDao {
     @Insert
     suspend fun insert(entity: AuditLogEntity)
+
+    @Query("SELECT * FROM audit_log ORDER BY at DESC, id DESC LIMIT :limit")
+    fun observeLatest(limit: Int): Flow<List<AuditLogEntity>>
+}
+
+@Dao
+interface ExpectedIncomeDao {
+    @Query("SELECT * FROM expected_income ORDER BY active DESC, day, source")
+    fun observeAll(): Flow<List<ExpectedIncomeEntity>>
+
+    @Query("SELECT * FROM expected_income WHERE id = :id")
+    suspend fun get(id: Long): ExpectedIncomeEntity?
+
+    @Insert
+    suspend fun insert(entity: ExpectedIncomeEntity): Long
+
+    @Update
+    suspend fun update(entity: ExpectedIncomeEntity)
+
+    @Query(
+        """
+        SELECT r.expected_income_id AS expected_income_id, r.period AS period, r.income_id AS income_id,
+               i.amount_cents AS amount_cents, i.received_at AS received_at
+        FROM expected_income_record r JOIN income i ON i.id = r.income_id
+        WHERE i.voided = 0
+        """,
+    )
+    fun observeRecords(): Flow<List<IncomeRecordWithIncome>>
+
+    @Query("SELECT * FROM expected_income_record WHERE expected_income_id = :id AND period = :period")
+    suspend fun getRecord(id: Long, period: Int): ExpectedIncomeRecordEntity?
+
+    @Insert
+    suspend fun insertRecord(entity: ExpectedIncomeRecordEntity): Long
+
+    @Query("DELETE FROM expected_income_record WHERE id = :id")
+    suspend fun deleteRecord(id: Long)
+
+    @Query("DELETE FROM expected_income_record WHERE income_id = :incomeId")
+    suspend fun deleteRecordsForIncome(incomeId: Long)
+}
+
+@Dao
+interface AttachmentDao {
+    @Query("SELECT * FROM attachment WHERE expense_id = :expenseId ORDER BY created_at")
+    fun observeForExpense(expenseId: Long): Flow<List<AttachmentEntity>>
+
+    @Query("SELECT * FROM attachment WHERE id = :id")
+    suspend fun get(id: Long): AttachmentEntity?
+
+    @Insert
+    suspend fun insert(entity: AttachmentEntity): Long
+
+    @Query("DELETE FROM attachment WHERE id = :id")
+    suspend fun delete(id: Long)
+}
+
+@Dao
+interface SettingsDao {
+    @Query("SELECT * FROM app_setting")
+    fun observeAll(): Flow<List<AppSettingEntity>>
+
+    @Query("SELECT value FROM app_setting WHERE `key` = :key")
+    suspend fun get(key: String): String?
+
+    @Upsert
+    suspend fun put(entity: AppSettingEntity)
+}
+
+@Dao
+interface NotificationLogDao {
+    @Query("SELECT COUNT(*) FROM notification_log WHERE kind = :kind AND ref_id = :refId AND period = :period AND days_before = :daysBefore")
+    suspend fun count(kind: String, refId: Long, period: Int, daysBefore: Int): Int
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insert(entity: NotificationLogEntity): Long
+
+    @Query("DELETE FROM notification_log WHERE sent_at < :before")
+    suspend fun deleteOlderThan(before: Long)
 }

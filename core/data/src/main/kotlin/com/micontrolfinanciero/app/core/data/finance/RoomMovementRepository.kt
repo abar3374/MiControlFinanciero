@@ -5,6 +5,7 @@ import com.micontrolfinanciero.app.core.database.FinanceDatabase
 import com.micontrolfinanciero.app.core.database.dao.AuditDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
+import com.micontrolfinanciero.app.core.database.dao.ExpectedIncomeDao
 import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
 import com.micontrolfinanciero.app.core.database.dao.FixedPaymentDao
 import com.micontrolfinanciero.app.core.database.dao.IncomeDao
@@ -38,6 +39,7 @@ class RoomMovementRepository @Inject constructor(
     private val categoryDao: CategoryDao,
     private val movementDao: MovementDao,
     private val fixedPaymentDao: FixedPaymentDao,
+    private val expectedIncomeDao: ExpectedIncomeDao,
     private val auditDao: AuditDao,
 ) : MovementRepository {
 
@@ -118,6 +120,8 @@ class RoomMovementRepository @Inject constructor(
             val existing = incomeDao.get(id) ?: return@withTransaction
             val now = System.currentTimeMillis()
             incomeDao.markVoided(id, now)
+            // Si era un ingreso fijo confirmado (salario), ese mes vuelve a quedar esperado.
+            expectedIncomeDao.deleteRecordsForIncome(id)
             audit("income", id, "DELETE", existing.auditText(), now)
         }
     }

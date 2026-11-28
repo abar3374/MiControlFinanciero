@@ -3,7 +3,11 @@ package com.micontrolfinanciero.app.core.database
 import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.micontrolfinanciero.app.core.database.dao.AttachmentDao
 import com.micontrolfinanciero.app.core.database.dao.AuditDao
+import com.micontrolfinanciero.app.core.database.dao.ExpectedIncomeDao
+import com.micontrolfinanciero.app.core.database.dao.NotificationLogDao
+import com.micontrolfinanciero.app.core.database.dao.SettingsDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
 import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
@@ -11,7 +15,12 @@ import com.micontrolfinanciero.app.core.database.dao.FixedPaymentDao
 import com.micontrolfinanciero.app.core.database.dao.IncomeDao
 import com.micontrolfinanciero.app.core.database.dao.MovementDao
 import com.micontrolfinanciero.app.core.database.dao.UserProfileDao
+import com.micontrolfinanciero.app.core.database.entity.AppSettingEntity
+import com.micontrolfinanciero.app.core.database.entity.AttachmentEntity
 import com.micontrolfinanciero.app.core.database.entity.AuditLogEntity
+import com.micontrolfinanciero.app.core.database.entity.ExpectedIncomeEntity
+import com.micontrolfinanciero.app.core.database.entity.ExpectedIncomeRecordEntity
+import com.micontrolfinanciero.app.core.database.entity.NotificationLogEntity
 import com.micontrolfinanciero.app.core.database.entity.BudgetEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseCategoryEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseEntity
@@ -31,6 +40,8 @@ import com.micontrolfinanciero.app.core.database.entity.UserProfileEntity
  *  - v2 (0.3.0): expense_category, budget, expense, income, audit_log. Migración automática
  *    (solo agrega tablas nuevas; el perfil queda intacto).
  *  - v3 (0.4.0): fixed_payment, fixed_payment_record (pagos del mes). Migración automática.
+ *  - v4 (0.5.0): columnas de frecuencia y crédito en fixed_payment; expected_income(_record),
+ *    attachment, app_setting, notification_log. Migración automática.
  */
 @Database(
     entities = [
@@ -42,12 +53,18 @@ import com.micontrolfinanciero.app.core.database.entity.UserProfileEntity
         AuditLogEntity::class,
         FixedPaymentEntity::class,
         FixedPaymentRecordEntity::class,
+        ExpectedIncomeEntity::class,
+        ExpectedIncomeRecordEntity::class,
+        AttachmentEntity::class,
+        AppSettingEntity::class,
+        NotificationLogEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4),
     ],
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -59,6 +76,10 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun movementDao(): MovementDao
     abstract fun auditDao(): AuditDao
     abstract fun fixedPaymentDao(): FixedPaymentDao
+    abstract fun expectedIncomeDao(): ExpectedIncomeDao
+    abstract fun attachmentDao(): AttachmentDao
+    abstract fun settingsDao(): SettingsDao
+    abstract fun notificationLogDao(): NotificationLogDao
 
     companion object {
         const val FILE_NAME = "finance.db"

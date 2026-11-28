@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.micontrolfinanciero.app.core.domain.finance.DEFAULT_ZONE
 import com.micontrolfinanciero.app.core.domain.finance.FinanceValidator
 import com.micontrolfinanciero.app.core.domain.finance.FixedPaymentRepository
+import com.micontrolfinanciero.app.core.model.IncomeDestination
 import com.micontrolfinanciero.app.core.model.Money
+import com.micontrolfinanciero.app.core.model.MonthlyIncome
 import com.micontrolfinanciero.app.core.model.MoneyFormat
 import com.micontrolfinanciero.app.core.model.MonthlyPayment
 import com.micontrolfinanciero.app.core.model.PaymentMethod
@@ -28,12 +30,20 @@ data class MonthlyPaymentsState(
     val loading: Boolean = true,
     val month: YearMonth = YearMonth.now(DEFAULT_ZONE),
     val items: List<MonthlyPayment> = emptyList(),
+    val incomes: List<MonthlyIncome> = emptyList(),
 ) {
     val total: Money get() = Money.sum(items.map { it.record?.amount ?: it.payment.amount })
     val paid: Money get() = Money.sum(items.mapNotNull { it.record?.amount })
     val pending: Money get() = Money.sum(items.filter { !it.isPaid }.map { it.payment.amount })
     val pendingCount: Int get() = items.count { !it.isPaid }
 }
+
+data class ReceiveDialogState(
+    val item: MonthlyIncome,
+    val amountDigits: String,
+    val destination: IncomeDestination,
+    val error: String? = null,
+)
 
 /** Diálogo para registrar un pago: el valor y el método se pueden ajustar. */
 data class PayDialogState(
@@ -55,7 +65,8 @@ class MonthlyPaymentsViewModel @Inject constructor(
     val state: StateFlow<MonthlyPaymentsState> = combine(
         month,
         month.flatMapLatest { m -> repository.observeMonth(m) { LocalDate.now(DEFAULT_ZONE) } },
-    ) { m, items -> MonthlyPaymentsState(loading = false, month = m, items = items) }
+        month.flatMapLatest { m -> repository.observeIncomeMonth(m) { LocalDate.now(DEFAULT_ZONE) } },
+    ) { m, items, incomes -> MonthlyPaymentsState(loading = false, month = m, items = items, incomes = incomes) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MonthlyPaymentsState())
 
     private val _pay = MutableStateFlow<PayDialogState?>(null)
@@ -129,4 +140,51 @@ class MonthlyPaymentsViewModel @Inject constructor(
     }
 
     fun onMessageShown() { _message.value = null }
+
+    // ---------------- Ingresos fijos esperados
+
+    private val _receive = MutableStateFlow<ReceiveDialogState?>(null)
+    val receive: StateFlow<ReceiveDialogState?> = _receive
+
+    private val _confirmUndoIncome = MutableStateFlow<MonthlyIncome?>(null)
+    val confirmUndoIncome: StateFlow<MonthlyIncome?> = _confirmUndoIncome
+
+    fun openReceive(item: MonthlyIncome) {
+        _receive.value = ReceiveDialogState(item, (item.expected.amount.cents / 100).toString(), item.expected.destination)
+    }
+    fun onReceiveAmount(v: String) = _receive.update { it?.copy(amountDigits = v, error = null) }
+    fun onReceiveDestination(v: IncomeDestination) = _receive.update { it?.copy(destination = v) }
+    fun closeReceive() { _receive.value = null }
+
+    fun confirmReceive() {
+        val dialog = _receive.value ?: return
+        val units = FinanceValidator.digitsOnly(dialog.amountDigits).toLongOrNull()
+        if (units == null || units <= 0L) {
+            _receive.update { it?.copy(error = "Escribe el valor recibido.") }
+            return
+        }
+        viewModelScope.launch {
+            val item = dialog.item
+            val now = ZonedDateTime.now(DEFAULT_ZONE)
+            val at = if (YearMonth.from(now) == item.month) now.toInstant().toEpochMilli()
+            else item.date.atTime(12, 0).atZone(DEFAULT_ZONE).toInstant().toEpochMilli()
+            runCatching { repository.markIncomeReceived(item.expected.id, item.month, Money.ofUnits(units), at, dialog.destination) }
+                .onSuccess {
+                    _receive.value = null
+                    _message.value = "Ingreso confirmado: ${item.expected.source} · ${MoneyFormat.COLOMBIA.format(Money.ofUnits(units))}."
+                }
+                .onFailure { e -> _receive.update { it?.copy(error = e.message ?: "No se pudo confirmar.") } }
+        }
+    }
+
+    fun askUndoIncome(item: MonthlyIncome) { _confirmUndoIncome.value = item }
+    fun cancelUndoIncome() { _confirmUndoIncome.value = null }
+    fun undoIncome() {
+        val item = _confirmUndoIncome.value ?: return
+        _confirmUndoIncome.value = null
+        viewModelScope.launch {
+            repository.undoIncomeReceived(item.expected.id, item.month)
+            _message.value = "${item.expected.source} vuelve a quedar como esperado."
+        }
+    }
 }

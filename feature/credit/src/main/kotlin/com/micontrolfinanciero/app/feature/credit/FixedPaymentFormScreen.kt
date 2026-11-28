@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.micontrolfinanciero.app.core.designsystem.component.BackTopBar
+import com.micontrolfinanciero.app.core.designsystem.component.BudgetProgressBar
+import com.micontrolfinanciero.app.core.designsystem.component.FinanceCard
 import com.micontrolfinanciero.app.core.designsystem.component.ChipOption
 import com.micontrolfinanciero.app.core.designsystem.component.ChoiceChips
 import com.micontrolfinanciero.app.core.designsystem.component.ConfirmDeleteDialog
@@ -46,7 +48,10 @@ import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
 import com.micontrolfinanciero.app.core.domain.finance.FinanceValidator
 import com.micontrolfinanciero.app.core.domain.finance.FormField
 import com.micontrolfinanciero.app.core.model.CLASSIFICATIONS
+import com.micontrolfinanciero.app.core.model.CreditSummary
 import com.micontrolfinanciero.app.core.model.ExpenseNature
+import com.micontrolfinanciero.app.core.model.FixedPaymentRecord
+import com.micontrolfinanciero.app.core.model.MonthInterval
 import com.micontrolfinanciero.app.core.model.PaymentMethod
 import java.time.LocalTime
 import com.micontrolfinanciero.app.core.designsystem.R as DesignR
@@ -120,6 +125,18 @@ fun FixedPaymentFormRoute(
                         error = state.errors[FormField.DUE_DAY],
                     )
 
+                    FieldLabel("Frecuencia")
+                    ChoiceChips(
+                        options = MonthInterval.entries.map { ChipOption(it, it.label) },
+                        selected = state.interval,
+                        onSelect = viewModel::onIntervalChange,
+                    )
+                    Text(
+                        "Para pagos quincenales, crea dos pagos fijos (por ejemplo día 15 y día 30).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = FinanceColors.MediumGray,
+                    )
+
                     FieldLabel("Categoría", required = true)
                     ChoiceChips(
                         options = state.categories.map { ChipOption(it.id, it.name) },
@@ -158,6 +175,27 @@ fun FixedPaymentFormRoute(
                         Switch(checked = state.isCredit, onCheckedChange = viewModel::onCreditChange)
                     }
                     if (state.isCredit) {
+                        state.creditSummary?.let { CreditSummaryCard(it, state.history) }
+                        FinanceTextField(
+                            value = state.entity,
+                            onValueChange = viewModel::onEntityChange,
+                            label = "Entidad o establecimiento (opcional)",
+                            error = state.errors[FormField.ENTITY],
+                            maxLength = 40,
+                        )
+                        MoneyField(
+                            digits = state.originalAmountDigits,
+                            onDigitsChange = viewModel::onOriginalAmountChange,
+                            label = "Valor inicial del crédito (opcional)",
+                            error = state.errors[FormField.ORIGINAL_AMOUNT],
+                        )
+                        NumberField(
+                            value = state.interestText,
+                            onValueChange = viewModel::onInterestChange,
+                            label = "Tasa de interés mensual % (opcional)",
+                            error = state.errors[FormField.INTEREST],
+                            decimal = true,
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             NumberField(
                                 value = state.totalInstallmentsText,
@@ -224,6 +262,46 @@ fun FixedPaymentFormRoute(
     }
 }
 
+/** Resumen del crédito: pagado, saldo estimado, avance e historial de cuotas. */
+@Composable
+private fun CreditSummaryCard(summary: CreditSummary, history: List<FixedPaymentRecord>) {
+    FinanceCard(filled = true) {
+        Text("Estado del crédito", style = MaterialTheme.typography.titleSmall, color = FinanceColors.DarkBlue)
+        Row(modifier = Modifier.padding(top = 8.dp)) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Total pagado", style = MaterialTheme.typography.bodySmall, color = FinanceColors.MediumGray)
+                Text(FinanceFormat.money(summary.totalPaid), style = MaterialTheme.typography.titleMedium, color = FinanceColors.Green)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text("Saldo pendiente (estimado)", style = MaterialTheme.typography.bodySmall, color = FinanceColors.MediumGray)
+                Text(FinanceFormat.money(summary.estimatedBalance), style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue)
+            }
+        }
+        BudgetProgressBar(percent = summary.percentPaid, modifier = Modifier.padding(vertical = 8.dp))
+        Text(
+            if (summary.isSettled) "¡Saldado! Pagaste las ${summary.totalInstallments} cuotas."
+            else "${summary.paidInstallments} de ${summary.totalInstallments} cuotas pagadas (${summary.percentPaid} %) · faltan ${summary.remainingInstallments}",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (summary.isSettled) FinanceColors.Green else FinanceColors.MediumGray,
+        )
+        if (history.isNotEmpty()) {
+            Text("Historial de pagos", style = MaterialTheme.typography.labelLarge, color = FinanceColors.DarkBlue, modifier = Modifier.padding(top = 10.dp))
+            history.take(24).forEach { record ->
+                Row(modifier = Modifier.padding(top = 4.dp)) {
+                    Text(FinanceFormat.month(record.month), style = MaterialTheme.typography.bodySmall, color = FinanceColors.DarkBlue, modifier = Modifier.weight(1f))
+                    Text(FinanceFormat.money(record.amount), style = MaterialTheme.typography.bodySmall, color = FinanceColors.DarkBlue)
+                }
+            }
+        }
+        Text(
+            "El saldo es una estimación (cuotas que faltan × valor de la cuota). Tu entidad puede liquidar intereses distinto.",
+            style = MaterialTheme.typography.bodySmall,
+            color = FinanceColors.MediumGray,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
 @Composable
 private fun NumberField(
     value: String,
@@ -231,6 +309,7 @@ private fun NumberField(
     label: String,
     error: String?,
     modifier: Modifier = Modifier,
+    decimal: Boolean = false,
 ) {
     OutlinedTextField(
         value = value,
@@ -243,7 +322,7 @@ private fun NumberField(
             null
         },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number, imeAction = ImeAction.Next),
         modifier = modifier,
     )
 }

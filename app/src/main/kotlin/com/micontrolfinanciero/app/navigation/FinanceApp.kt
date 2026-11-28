@@ -19,6 +19,7 @@ import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
 import com.micontrolfinanciero.app.core.model.MovementKind
 import com.micontrolfinanciero.app.feature.budget.BudgetFormRoute
 import com.micontrolfinanciero.app.feature.budget.BudgetRoute
+import com.micontrolfinanciero.app.feature.credit.ExpectedIncomeFormRoute
 import com.micontrolfinanciero.app.feature.credit.FixedPaymentFormRoute
 import com.micontrolfinanciero.app.feature.credit.MonthlyPaymentsRoute
 import com.micontrolfinanciero.app.feature.dashboard.DashboardRoute
@@ -116,9 +117,12 @@ private fun FinanceMainContent(appVersion: String) {
                     onBack = back,
                     onNewPayment = { navController.navigate(FixedPaymentFormDestination()) },
                     onEditPayment = { id -> navController.navigate(FixedPaymentFormDestination(id)) },
+                    onNewIncome = { navController.navigate(ExpectedIncomeFormDestination()) },
+                    onEditIncome = { id -> navController.navigate(ExpectedIncomeFormDestination(id)) },
                 )
             }
             composable<FixedPaymentFormDestination> { FixedPaymentFormRoute(onDone = back) }
+            composable<ExpectedIncomeFormDestination> { ExpectedIncomeFormRoute(onDone = back) }
             composable<MovementsDestination> {
                 MovementsRoute(
                     onBack = back,

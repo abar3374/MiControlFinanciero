@@ -1,6 +1,19 @@
 package com.micontrolfinanciero.app.feature.expense
 
+import android.content.Context
+import android.content.Intent
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -201,11 +214,7 @@ private fun ExpenseForm(state: ExpenseFormState, viewModel: ExpenseFormViewModel
                 maxLength = 300,
                 imeAction = ImeAction.Default,
             )
-            Text(
-                "Adjuntar el comprobante (foto o archivo) llega en una próxima versión.",
-                style = MaterialTheme.typography.bodySmall,
-                color = FinanceColors.MediumGray,
-            )
+            AttachmentsSection(state = state, viewModel = viewModel)
         }
         PrimaryActionButton(
             text = if (state.isEdit) "Guardar cambios" else "Guardar gasto",
@@ -213,5 +222,58 @@ private fun ExpenseForm(state: ExpenseFormState, viewModel: ExpenseFormViewModel
             busy = state.saving,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
         )
+    }
+}
+
+/** Comprobantes: foto o PDF, guardados en la carpeta privada de la app. */
+@Composable
+private fun AttachmentsSection(state: ExpenseFormState, viewModel: ExpenseFormViewModel) {
+    val context = LocalContext.current
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val resolver = context.contentResolver
+            val mime = resolver.getType(uri) ?: "application/octet-stream"
+            val name = runCatching {
+                resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                    if (c.moveToFirst()) c.getString(0) else null
+                }
+            }.getOrNull() ?: "comprobante"
+            viewModel.onAttachmentPicked(uri.toString(), name, mime)
+        }
+    }
+    FieldLabel("Comprobante (opcional)")
+    state.attachments.forEach { a ->
+        AttachmentRow(
+            name = a.displayName,
+            onOpen = { openPrivateFile(context, a.path, a.mimeType) },
+            onRemove = { viewModel.removeAttachment(a.id) },
+        )
+    }
+    state.pendingAttachments.forEach { p ->
+        AttachmentRow(name = p.name + " (se guarda con el gasto)", onOpen = null, onRemove = { viewModel.removePending(p) })
+    }
+    OutlinedButton(
+        onClick = { picker.launch(arrayOf("image/*", "application/pdf")) },
+        enabled = !state.attaching,
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(if (state.attaching) "Adjuntando…" else "Adjuntar foto o PDF del comprobante") }
+}
+
+@Composable
+private fun AttachmentRow(name: String, onOpen: (() -> Unit)?, onRemove: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(name, style = MaterialTheme.typography.bodyMedium, color = FinanceColors.DarkBlue, maxLines = 1, modifier = Modifier.weight(1f))
+        if (onOpen != null) TextButton(onClick = onOpen) { Text("Ver") }
+        TextButton(onClick = onRemove) { Text("Quitar", color = FinanceColors.Red) }
+    }
+}
+
+/** Abre un archivo privado con otra app (visor de fotos o PDF) mediante un permiso temporal. */
+internal fun openPrivateFile(context: Context, path: String, mimeType: String) {
+    runCatching {
+        val uri = FileProvider.getUriForFile(context, context.packageName + ".files", File(path))
+        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mimeType).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        context.startActivity(Intent.createChooser(intent, "Abrir comprobante"))
     }
 }

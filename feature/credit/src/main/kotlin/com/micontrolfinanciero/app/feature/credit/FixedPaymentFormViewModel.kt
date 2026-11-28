@@ -9,8 +9,12 @@ import com.micontrolfinanciero.app.core.domain.finance.DEFAULT_ZONE
 import com.micontrolfinanciero.app.core.domain.finance.FinanceValidator
 import com.micontrolfinanciero.app.core.domain.finance.FixedPaymentInput
 import com.micontrolfinanciero.app.core.domain.finance.FixedPaymentRepository
+import com.micontrolfinanciero.app.core.domain.finance.FixedPaymentSchedule
 import com.micontrolfinanciero.app.core.domain.finance.FormField
 import com.micontrolfinanciero.app.core.model.Budget
+import com.micontrolfinanciero.app.core.model.CreditSummary
+import com.micontrolfinanciero.app.core.model.FixedPaymentRecord
+import com.micontrolfinanciero.app.core.model.MonthInterval
 import com.micontrolfinanciero.app.core.model.ExpenseCategory
 import com.micontrolfinanciero.app.core.model.ExpenseNature
 import com.micontrolfinanciero.app.core.model.FixedPayment
@@ -42,6 +46,14 @@ data class FixedPaymentFormState(
     val paidInstallmentsText: String = "",
     val startMonth: YearMonth = YearMonth.now(DEFAULT_ZONE),
     val notes: String = "",
+    val interval: MonthInterval = MonthInterval.MONTHLY,
+    val entity: String = "",
+    val interestText: String = "",
+    val originalAmountDigits: String = "",
+    /** Solo al editar un crédito: cuánto va pagado y cuánto falta. */
+    val creditSummary: CreditSummary? = null,
+    /** Pagos registrados de este pago fijo, del más reciente al más antiguo. */
+    val history: List<FixedPaymentRecord> = emptyList(),
     val errors: Map<FormField, String> = emptyMap(),
     val saving: Boolean = false,
     val confirmDelete: Boolean = false,
@@ -85,7 +97,23 @@ class FixedPaymentFormViewModel @Inject constructor(
                         paidInstallmentsText = p.initialPaidInstallments.toString(),
                         startMonth = p.startMonth,
                         notes = p.notes,
+                        interval = MonthInterval.of(p.intervalMonths),
+                        entity = p.entity,
+                        interestText = p.interestRateBp?.let { bp -> FinanceValidator.formatRateBp(bp) }.orEmpty(),
+                        originalAmountDigits = p.originalAmount?.let { m -> (m.cents / 100).toString() }.orEmpty(),
                     )
+                }
+                launch {
+                    repository.observeRecords().collect { records ->
+                        val own = records.filter { it.fixedPaymentId == editId }.sortedByDescending { it.month }
+                        val current = repository.getFixedPayment(editId)
+                        _state.update {
+                            it.copy(
+                                history = own,
+                                creditSummary = current?.let { cp -> FixedPaymentSchedule.creditSummary(cp, records) },
+                            )
+                        }
+                    }
                 }
             }
             combine(categoryRepository.observeCategories(), budgetRepository.observeBudgets()) { c, b -> c to b }
@@ -112,6 +140,10 @@ class FixedPaymentFormViewModel @Inject constructor(
     fun onStartDateChange(v: LocalDate) = edit { copy(startMonth = YearMonth.from(v)) }
     fun onNotesChange(v: String) = edit { copy(notes = v) }
     fun onBudgetChange(v: Long?) = edit { copy(budgetId = v) }
+    fun onIntervalChange(v: MonthInterval) = edit { copy(interval = v) }
+    fun onEntityChange(v: String) = edit { copy(entity = v.take(FinanceValidator.NAME_MAX)) }
+    fun onInterestChange(v: String) = edit { copy(interestText = v.filter { it.isDigit() || it == ',' || it == '.' }.take(5)) }
+    fun onOriginalAmountChange(v: String) = edit { copy(originalAmountDigits = v) }
 
     fun onCategoryChange(id: Long) {
         val budgets = activeBudgets.filter { it.categoryId == id }
@@ -129,7 +161,10 @@ class FixedPaymentFormViewModel @Inject constructor(
     fun save() {
         val s = _state.value
         val result = FinanceValidator.validateFixedPayment(
-            FixedPaymentInput(s.name, s.amountDigits, s.dueDayText, s.categoryId, s.isCredit, s.totalInstallmentsText, s.paidInstallmentsText, s.notes),
+            FixedPaymentInput(
+                s.name, s.amountDigits, s.dueDayText, s.categoryId, s.isCredit, s.totalInstallmentsText,
+                s.paidInstallmentsText, s.notes, s.entity, s.interestText, s.originalAmountDigits,
+            ),
         )
         val clean = result.value
         if (!result.isValid || clean == null) {
@@ -153,6 +188,10 @@ class FixedPaymentFormViewModel @Inject constructor(
                         paymentMethod = s.paymentMethod,
                         notes = clean.notes,
                         active = true,
+                        intervalMonths = s.interval.months,
+                        entity = clean.entity,
+                        interestRateBp = clean.interestRateBp,
+                        originalAmount = clean.originalAmount,
                     ),
                 )
             }.onSuccess {

@@ -3,7 +3,11 @@ package com.micontrolfinanciero.app.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.micontrolfinanciero.app.core.database.FinanceDatabase
+import com.micontrolfinanciero.app.core.database.dao.AttachmentDao
 import com.micontrolfinanciero.app.core.database.dao.AuditDao
+import com.micontrolfinanciero.app.core.database.dao.ExpectedIncomeDao
+import com.micontrolfinanciero.app.core.database.dao.NotificationLogDao
+import com.micontrolfinanciero.app.core.database.dao.SettingsDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
 import com.micontrolfinanciero.app.core.database.dao.ExpenseDao
@@ -47,4 +51,8 @@ object DatabaseModule {
     @Provides fun provideMovementDao(db: FinanceDatabase): MovementDao = db.movementDao()
     @Provides fun provideAuditDao(db: FinanceDatabase): AuditDao = db.auditDao()
     @Provides fun provideFixedPaymentDao(db: FinanceDatabase): FixedPaymentDao = db.fixedPaymentDao()
+    @Provides fun provideExpectedIncomeDao(db: FinanceDatabase): ExpectedIncomeDao = db.expectedIncomeDao()
+    @Provides fun provideAttachmentDao(db: FinanceDatabase): AttachmentDao = db.attachmentDao()
+    @Provides fun provideSettingsDao(db: FinanceDatabase): SettingsDao = db.settingsDao()
+    @Provides fun provideNotificationLogDao(db: FinanceDatabase): NotificationLogDao = db.notificationLogDao()
 }

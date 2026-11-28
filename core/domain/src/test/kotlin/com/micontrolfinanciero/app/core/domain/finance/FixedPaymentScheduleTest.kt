@@ -81,3 +81,55 @@ class FixedPaymentScheduleTest {
         assertTrue(bad.errors.keys.containsAll(listOf(FormField.NAME, FormField.AMOUNT, FormField.DUE_DAY, FormField.CATEGORY, FormField.PAID_INSTALLMENTS)))
     }
 }
+
+class FixedPaymentPhase5Test {
+
+    private val nov = YearMonth.of(2026, 11)
+
+    @Test
+    fun `frecuencia trimestral solo aparece cada tres meses`() {
+        val p = FixedPayment(
+            id = 1, name = "SOAT", categoryId = 1, budgetId = null, amount = Money.ofUnits(100_000), dueDay = 10,
+            totalInstallments = null, initialPaidInstallments = 0, startMonth = nov,
+            paymentMethod = PaymentMethod.PSE, notes = "", active = true, intervalMonths = 3,
+        )
+        assertTrue(FixedPaymentSchedule.isVisible(p, nov, emptyList()))
+        assertTrue(!FixedPaymentSchedule.isVisible(p, YearMonth.of(2026, 12), emptyList()))
+        assertTrue(FixedPaymentSchedule.isVisible(p, YearMonth.of(2027, 2), emptyList()))
+    }
+
+    @Test
+    fun `resumen de credito`() {
+        val p = FixedPayment(
+            id = 1, name = "Sistecrédito", categoryId = 1, budgetId = null, amount = Money.ofUnits(200_000), dueDay = 25,
+            totalInstallments = 6, initialPaidInstallments = 3, startMonth = nov,
+            paymentMethod = PaymentMethod.PSE, notes = "", active = true,
+        )
+        val records = listOf(FixedPaymentRecord(1, nov, 9, Money.ofUnits(200_465), 0))
+        val s = FixedPaymentSchedule.creditSummary(p, records)!!
+        assertEquals(4, s.paidInstallments)
+        assertEquals(Money.ofUnits(800_465), s.totalPaid)
+        assertEquals(Money.ofUnits(400_000), s.estimatedBalance)
+        assertEquals(66, s.percentPaid)
+    }
+
+    @Test
+    fun `salario esperado no se marca recibido solo por la fecha`() {
+        val salary = com.micontrolfinanciero.app.core.model.ExpectedIncome(
+            id = 1, source = "Salario", amount = Money.ofUnits(3_800_000), day = 30, intervalMonths = 1,
+            destination = com.micontrolfinanciero.app.core.model.IncomeDestination.ACCOUNT,
+            startMonth = nov, notes = "", active = true,
+        )
+        val list = FixedPaymentSchedule.incomesForMonth(listOf(salary), emptyList(), nov, LocalDate.of(2026, 12, 1))
+        assertEquals(com.micontrolfinanciero.app.core.model.IncomeStatus.LATE, list.single().status)
+        assertEquals(LocalDate.of(2027, 2, 28), FixedPaymentSchedule.incomeDate(salary, YearMonth.of(2027, 2)))
+    }
+
+    @Test
+    fun `tasa de interes con coma o punto`() {
+        assertEquals(185, FinanceValidator.parseRateBp("1,85"))
+        assertEquals(185, FinanceValidator.parseRateBp("1.85 %"))
+        assertEquals(null, FinanceValidator.parseRateBp("12"))
+        assertEquals("1,85", FinanceValidator.formatRateBp(185))
+    }
+}

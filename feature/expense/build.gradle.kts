@@ -26,6 +26,8 @@ dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.domain)
 
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)

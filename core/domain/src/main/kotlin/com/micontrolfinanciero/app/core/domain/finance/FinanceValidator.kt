@@ -3,7 +3,7 @@ package com.micontrolfinanciero.app.core.domain.finance
 import com.micontrolfinanciero.app.core.model.Money
 
 /** Campos de los formularios de gasto, ingreso, rubro y categoría. */
-enum class FormField { AMOUNT, CONCEPT, PLACE, CATEGORY, DATE, SOURCE, NAME, DESCRIPTION, DUE_DAY, INSTALLMENTS, PAID_INSTALLMENTS }
+enum class FormField { AMOUNT, CONCEPT, PLACE, CATEGORY, DATE, SOURCE, NAME, DESCRIPTION, DUE_DAY, INSTALLMENTS, PAID_INSTALLMENTS, INTEREST, ORIGINAL_AMOUNT, ENTITY }
 
 /** Resultado de validar un formulario: valor limpio o errores por campo. */
 data class FormValidation<T>(
@@ -66,6 +66,10 @@ data class FixedPaymentInput(
     val totalInstallmentsText: String,
     val paidInstallmentsText: String,
     val notes: String,
+    val entity: String = "",
+    /** Tasa mensual escrita por el usuario, por ejemplo "1,85" o "1.85". Vacía = sin tasa. */
+    val interestText: String = "",
+    val originalAmountDigits: String = "",
 )
 
 data class CleanFixedPayment(
@@ -76,7 +80,14 @@ data class CleanFixedPayment(
     val totalInstallments: Int?,
     val initialPaidInstallments: Int,
     val notes: String,
+    val entity: String = "",
+    val interestRateBp: Int? = null,
+    val originalAmount: Money? = null,
 )
+
+data class ExpectedIncomeInput(val source: String, val amountDigits: String, val dayText: String, val notes: String)
+
+data class CleanExpectedIncome(val source: String, val amount: Money, val day: Int, val notes: String)
 
 /**
  * Reglas de los formularios de dinero (secciones 8 y 13 del proyecto):
@@ -189,11 +200,55 @@ object FinanceValidator {
         val notes = input.notes.trim()
         if (notes.length > TEXT_MAX) errors[FormField.DESCRIPTION] = "Máximo $TEXT_MAX caracteres."
 
-        val value = if (errors.isEmpty() && amount != null && dueDay != null && input.categoryId != null) {
-            CleanFixedPayment(name, amount, dueDay, input.categoryId, total, paid, notes)
+        val entity = clean(input.entity)
+        if (entity.length > NAME_MAX) errors[FormField.ENTITY] = "Máximo $NAME_MAX caracteres."
+        val rateBp = if (input.isCredit) parseRateBp(input.interestText) else null
+        if (input.isCredit && input.interestText.isNotBlank() && rateBp == null) {
+            errors[FormField.INTEREST] = "Escribe la tasa mensual en %, por ejemplo 1,85 (máximo 10 %)."
+        }
+        val originalDigits = digitsOnly(input.originalAmountDigits)
+        val original = if (input.isCredit && originalDigits.isNotEmpty()) {
+            val units = originalDigits.toLong()
+            if (units > MAX_AMOUNT_UNITS) {
+                errors[FormField.ORIGINAL_AMOUNT] = "El valor es demasiado grande."
+                null
+            } else {
+                Money.ofUnits(units)
+            }
         } else {
             null
         }
+
+        val value = if (errors.isEmpty() && amount != null && dueDay != null && input.categoryId != null) {
+            CleanFixedPayment(name, amount, dueDay, input.categoryId, total, paid, notes, entity, rateBp, original)
+        } else {
+            null
+        }
+        return FormValidation(value, errors)
+    }
+
+    /** "1,85" -> 185 (centésimas de punto). Admite coma o punto. Rango 0 a 10 %. */
+    fun parseRateBp(text: String): Int? {
+        val t = text.trim().replace(',', '.').removeSuffix("%").trim()
+        if (t.isEmpty()) return null
+        val value = t.toBigDecimalOrNull() ?: return null
+        if (value.signum() < 0 || value > java.math.BigDecimal.TEN) return null
+        return value.movePointRight(2).setScale(0, java.math.RoundingMode.HALF_UP).toInt()
+    }
+
+    fun formatRateBp(bp: Int): String = "%d,%02d".format(bp / 100, bp % 100)
+
+    fun validateExpectedIncome(input: ExpectedIncomeInput): FormValidation<CleanExpectedIncome> {
+        val errors = mutableMapOf<FormField, String>()
+        val amount = amountOrError(input.amountDigits, errors)
+        val source = clean(input.source)
+        if (source.length < 2) errors[FormField.SOURCE] = "Escribe de dónde viene (ejemplo: Salario)."
+        if (source.length > CONCEPT_MAX) errors[FormField.SOURCE] = "Máximo $CONCEPT_MAX caracteres."
+        val day = input.dayText.trim().toIntOrNull()
+        if (day == null || day !in 1..31) errors[FormField.DUE_DAY] = "Escribe el día en que llega, de 1 a 31."
+        val notes = input.notes.trim()
+        if (notes.length > TEXT_MAX) errors[FormField.DESCRIPTION] = "Máximo $TEXT_MAX caracteres."
+        val value = if (errors.isEmpty() && amount != null && day != null) CleanExpectedIncome(source, amount, day, notes) else null
         return FormValidation(value, errors)
     }
 

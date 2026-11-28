@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.micontrolfinanciero.app.core.domain.budget.BudgetMath
+import com.micontrolfinanciero.app.core.domain.finance.AttachmentRepository
 import com.micontrolfinanciero.app.core.domain.finance.BudgetRepository
 import com.micontrolfinanciero.app.core.domain.finance.CategoryRepository
 import com.micontrolfinanciero.app.core.domain.finance.DEFAULT_ZONE
@@ -13,6 +14,7 @@ import com.micontrolfinanciero.app.core.domain.finance.FormField
 import com.micontrolfinanciero.app.core.domain.finance.LocalTimes
 import com.micontrolfinanciero.app.core.domain.finance.MonthRange
 import com.micontrolfinanciero.app.core.domain.finance.MovementRepository
+import com.micontrolfinanciero.app.core.model.Attachment
 import com.micontrolfinanciero.app.core.model.Budget
 import com.micontrolfinanciero.app.core.model.Expense
 import com.micontrolfinanciero.app.core.model.ExpenseCategory
@@ -59,9 +61,16 @@ data class ExpenseFormState(
     /** true cuando el gasto fue eliminado: la pantalla se cierra. */
     val closed: Boolean = false,
     val error: String? = null,
+    /** Comprobantes ya guardados (al editar). */
+    val attachments: List<Attachment> = emptyList(),
+    /** Comprobantes elegidos para un gasto nuevo: se guardan al guardar el gasto. */
+    val pendingAttachments: List<PendingAttachment> = emptyList(),
+    val attaching: Boolean = false,
 ) {
     val isEdit: Boolean get() = expenseId != 0L
 }
+
+data class PendingAttachment(val uri: String, val name: String, val mimeType: String)
 
 data class SavedResult(val message: String, val alert: String?)
 
@@ -71,6 +80,7 @@ class ExpenseFormViewModel @Inject constructor(
     private val categoryRepository: CategoryRepository,
     private val budgetRepository: BudgetRepository,
     private val movementRepository: MovementRepository,
+    private val attachmentRepository: AttachmentRepository,
 ) : ViewModel() {
 
     private val editId: Long = savedStateHandle.get<Long>("id") ?: 0L
@@ -82,6 +92,11 @@ class ExpenseFormViewModel @Inject constructor(
     private val money = MoneyFormat.COLOMBIA
 
     init {
+        if (editId != 0L) {
+            viewModelScope.launch {
+                attachmentRepository.observeForExpense(editId).collect { list -> _state.update { it.copy(attachments = list) } }
+            }
+        }
         viewModelScope.launch {
             if (editId != 0L) loadExisting(editId)
             combine(categoryRepository.observeCategories(), budgetRepository.observeBudgets()) { cats, budgets ->
@@ -198,7 +213,7 @@ class ExpenseFormViewModel @Inject constructor(
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             runCatching {
-                movementRepository.saveExpense(
+                val savedId = movementRepository.saveExpense(
                     Expense(
                         id = s.expenseId,
                         concept = clean.concept,
@@ -212,6 +227,10 @@ class ExpenseFormViewModel @Inject constructor(
                         description = clean.description,
                     ),
                 )
+                // Comprobantes elegidos antes de guardar (gasto nuevo).
+                s.pendingAttachments.forEach { pending ->
+                    runCatching { attachmentRepository.add(savedId, pending.uri) }
+                }
                 budgetAlert(s.budgetId, YearMonth.from(s.date))
             }.onSuccess { alert ->
                 val verb = if (s.isEdit) "actualizado" else "guardado"
@@ -257,6 +276,27 @@ class ExpenseFormViewModel @Inject constructor(
             paymentMethod = it.paymentMethod,
             date = it.date,
         )
+    }
+
+    /** Comprobante elegido con el selector de archivos. */
+    fun onAttachmentPicked(uri: String, name: String, mimeType: String) {
+        val s = _state.value
+        if (!s.isEdit) {
+            _state.update { it.copy(pendingAttachments = it.pendingAttachments + PendingAttachment(uri, name, mimeType)) }
+            return
+        }
+        _state.update { it.copy(attaching = true) }
+        viewModelScope.launch {
+            runCatching { attachmentRepository.add(s.expenseId, uri) }
+                .onSuccess { _state.update { it.copy(attaching = false) } }
+                .onFailure { e -> _state.update { it.copy(attaching = false, error = e.message ?: "No se pudo adjuntar.") } }
+        }
+    }
+
+    fun removePending(item: PendingAttachment) = _state.update { it.copy(pendingAttachments = it.pendingAttachments - item) }
+
+    fun removeAttachment(id: Long) {
+        viewModelScope.launch { attachmentRepository.delete(id) }
     }
 
     fun askDelete() = _state.update { it.copy(confirmDelete = true) }

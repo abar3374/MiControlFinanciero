@@ -7,7 +7,11 @@ import com.micontrolfinanciero.app.core.model.ExpenseNature
 import com.micontrolfinanciero.app.core.model.Income
 import com.micontrolfinanciero.app.core.model.MonthSummary
 import com.micontrolfinanciero.app.core.model.MovementItem
+import com.micontrolfinanciero.app.core.model.Attachment
+import com.micontrolfinanciero.app.core.model.ExpectedIncome
 import com.micontrolfinanciero.app.core.model.FixedPayment
+import com.micontrolfinanciero.app.core.model.IncomeDestination
+import com.micontrolfinanciero.app.core.model.MonthlyIncome
 import com.micontrolfinanciero.app.core.model.FixedPaymentRecord
 import com.micontrolfinanciero.app.core.model.Money
 import com.micontrolfinanciero.app.core.model.MonthlyPayment
@@ -64,6 +68,29 @@ interface FixedPaymentRepository {
 
     /** Deshace el pago del mes: anula el gasto creado y el pago vuelve a pendiente. */
     suspend fun undoPaid(paymentId: Long, month: YearMonth)
+
+    // ---------------- Ingresos fijos esperados (salario)
+
+    fun observeExpectedIncomes(): Flow<List<ExpectedIncome>>
+    suspend fun getExpectedIncome(id: Long): ExpectedIncome?
+    suspend fun saveExpectedIncome(income: ExpectedIncome): Long
+    suspend fun deactivateExpectedIncome(id: Long)
+    fun observeIncomeMonth(month: YearMonth, today: () -> LocalDate): Flow<List<MonthlyIncome>>
+
+    /** Confirma que llegó el ingreso esperado del mes: crea el ingreso real y lo enlaza. */
+    suspend fun markIncomeReceived(expectedId: Long, month: YearMonth, amount: Money, receivedAt: Long, destination: IncomeDestination): Long
+
+    suspend fun undoIncomeReceived(expectedId: Long, month: YearMonth)
+}
+
+/** Comprobantes adjuntos a los gastos. */
+interface AttachmentRepository {
+    fun observeForExpense(expenseId: Long): Flow<List<Attachment>>
+
+    /** Copia el archivo elegido ([sourceUri], content://) a la carpeta privada y lo enlaza al gasto. */
+    suspend fun add(expenseId: Long, sourceUri: String): Attachment
+
+    suspend fun delete(attachmentId: Long)
 }
 
 /** Rubros (presupuestos mensuales por categoría). */
@@ -105,4 +132,10 @@ interface MovementRepository {
 
     /** Resumen del mes; se vuelve a emitir con cada cambio en gastos, ingresos o rubros. */
     fun observeMonthSummary(range: MonthRange): Flow<MonthSummary>
+}
+
+/** Ajustes de la app (recordatorios, bloqueo, pantalla segura, canal de actualizaciones). */
+interface SettingsRepository {
+    fun observeSettings(): Flow<com.micontrolfinanciero.app.core.model.AppSettings>
+    suspend fun update(change: (com.micontrolfinanciero.app.core.model.AppSettings) -> com.micontrolfinanciero.app.core.model.AppSettings)
 }

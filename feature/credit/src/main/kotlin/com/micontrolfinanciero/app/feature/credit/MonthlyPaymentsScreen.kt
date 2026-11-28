@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +47,9 @@ import com.micontrolfinanciero.app.core.designsystem.component.FinanceCard
 import com.micontrolfinanciero.app.core.designsystem.component.FinanceFormat
 import com.micontrolfinanciero.app.core.designsystem.component.MoneyField
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
+import com.micontrolfinanciero.app.core.model.IncomeDestination
+import com.micontrolfinanciero.app.core.model.IncomeStatus
+import com.micontrolfinanciero.app.core.model.MonthlyIncome
 import com.micontrolfinanciero.app.core.model.MonthlyPayment
 import com.micontrolfinanciero.app.core.model.PaymentMethod
 import com.micontrolfinanciero.app.core.model.PaymentStatus
@@ -60,9 +64,13 @@ fun MonthlyPaymentsRoute(
     onBack: () -> Unit,
     onNewPayment: () -> Unit,
     onEditPayment: (Long) -> Unit,
+    onNewIncome: () -> Unit,
+    onEditIncome: (Long) -> Unit,
     viewModel: MonthlyPaymentsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val receive by viewModel.receive.collectAsStateWithLifecycle()
+    val confirmUndoIncome by viewModel.confirmUndoIncome.collectAsStateWithLifecycle()
     val pay by viewModel.pay.collectAsStateWithLifecycle()
     val confirmUndo by viewModel.confirmUndo.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
@@ -77,7 +85,7 @@ fun MonthlyPaymentsRoute(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             BackTopBar(
-                title = "Pagos del mes",
+                title = "Pagos e ingresos del mes",
                 onBack = onBack,
             )
             LazyColumn(
@@ -119,6 +127,35 @@ fun MonthlyPaymentsRoute(
                             }
                         }
                     }
+                }
+                if (!state.loading && (state.items.isNotEmpty() || state.incomes.isNotEmpty())) {
+                    item { PaymentCalendar(state.month, state.items, state.incomes) }
+                }
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Ingresos fijos", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue, modifier = Modifier.weight(1f))
+                        TextButton(onClick = onNewIncome) { Text("+ Ingreso fijo") }
+                    }
+                }
+                if (state.incomes.isEmpty()) {
+                    item {
+                        Text(
+                            "Agrega tu salario u otro ingreso que llega cada mes. Lo confirmas cuando llegue.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = FinanceColors.MediumGray,
+                        )
+                    }
+                }
+                items(state.incomes, key = { "income-${it.expected.id}" }) { income ->
+                    IncomeRow(
+                        item = income,
+                        onReceive = { viewModel.openReceive(income) },
+                        onUndo = { viewModel.askUndoIncome(income) },
+                        onEdit = { onEditIncome(income.expected.id) },
+                    )
+                }
+                item {
+                    Text("Pagos fijos y créditos", style = MaterialTheme.typography.titleMedium, color = FinanceColors.DarkBlue, modifier = Modifier.padding(top = 8.dp))
                 }
                 if (!state.loading && state.items.isEmpty()) {
                     item {
@@ -188,6 +225,37 @@ fun MonthlyPaymentsRoute(
         )
     }
 
+    receive?.let { dialog ->
+        AlertDialog(
+            onDismissRequest = viewModel::closeReceive,
+            title = { Text("Confirmar ingreso") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("${dialog.item.expected.source} · ${FinanceFormat.month(dialog.item.month)}", style = MaterialTheme.typography.bodyMedium, color = FinanceColors.MediumGray)
+                    MoneyField(digits = dialog.amountDigits, onDigitsChange = viewModel::onReceiveAmount, label = "Valor recibido", error = dialog.error)
+                    FieldLabel("Recibido en")
+                    ChoiceChips(
+                        options = IncomeDestination.entries.map { ChipOption(it, it.label) },
+                        selected = dialog.destination,
+                        onSelect = viewModel::onReceiveDestination,
+                    )
+                }
+            },
+            confirmButton = { TextButton(onClick = viewModel::confirmReceive) { Text("Confirmar") } },
+            dismissButton = { TextButton(onClick = viewModel::closeReceive) { Text("Cancelar") } },
+        )
+    }
+
+    confirmUndoIncome?.let { item ->
+        AlertDialog(
+            onDismissRequest = viewModel::cancelUndoIncome,
+            title = { Text("¿Deshacer la confirmación?") },
+            text = { Text("${item.expected.source} volverá a quedar como esperado y se anulará el ingreso registrado (queda en la auditoría).") },
+            confirmButton = { TextButton(onClick = viewModel::undoIncome) { Text("Deshacer", color = FinanceColors.Red) } },
+            dismissButton = { TextButton(onClick = viewModel::cancelUndoIncome) { Text("Cancelar") } },
+        )
+    }
+
     confirmUndo?.let { item ->
         AlertDialog(
             onDismissRequest = viewModel::cancelUndo,
@@ -250,6 +318,94 @@ private fun PaymentRow(item: MonthlyPayment, onPay: () -> Unit, onUndo: () -> Un
                 ) { Text("Pagar") }
             }
         }
+    }
+}
+
+@Composable
+private fun IncomeRow(item: MonthlyIncome, onReceive: () -> Unit, onUndo: () -> Unit, onEdit: () -> Unit) {
+    val (color, tint) = when (item.status) {
+        IncomeStatus.RECEIVED -> FinanceColors.Green to FinanceColors.GreenTint
+        IncomeStatus.LATE -> FinanceColors.Amber to FinanceColors.AmberTint
+        IncomeStatus.EXPECTED -> FinanceColors.Blue to FinanceColors.BlueTint
+    }
+    FinanceCard(modifier = Modifier.clickable(role = Role.Button, onClick = onEdit)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(item.expected.source, style = MaterialTheme.typography.titleSmall, color = FinanceColors.DarkBlue)
+                Text("Llega el ${FinanceFormat.date(item.date)}", style = MaterialTheme.typography.bodySmall, color = FinanceColors.MediumGray)
+            }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("+" + FinanceFormat.money(item.record?.amount ?: item.expected.amount), style = MaterialTheme.typography.titleSmall, color = FinanceColors.Green)
+                Text(
+                    item.status.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = color,
+                    modifier = Modifier.background(tint, RoundedCornerShape(999.dp)).padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
+        }
+        Row(modifier = Modifier.padding(top = 10.dp)) {
+            if (item.isReceived) {
+                OutlinedButton(onClick = onUndo, shape = RoundedCornerShape(12.dp)) { Text("Deshacer") }
+            } else {
+                Button(
+                    onClick = onReceive,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = FinanceColors.Green),
+                ) { Text("Confirmar que llegó") }
+            }
+        }
+    }
+}
+
+/** Calendario del mes con un punto de color en cada día que vence un pago o llega un ingreso. */
+@Composable
+private fun PaymentCalendar(month: java.time.YearMonth, payments: List<MonthlyPayment>, incomes: List<MonthlyIncome>) {
+    val dots = mutableMapOf<Int, MutableList<Color>>()
+    payments.forEach { p -> dots.getOrPut(p.dueDate.dayOfMonth) { mutableListOf() }.add(statusColors(p.status).first) }
+    incomes.forEach { i -> dots.getOrPut(i.date.dayOfMonth) { mutableListOf() }.add(FinanceColors.Green) }
+    val today = java.time.LocalDate.now(FinanceFormat.zone)
+    val offset = month.atDay(1).dayOfWeek.value - 1 // lunes = 0
+    val cells = offset + month.lengthOfMonth()
+    FinanceCard {
+        Text("Calendario de pagos", style = MaterialTheme.typography.titleSmall, color = FinanceColors.DarkBlue)
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            listOf("L", "M", "M", "J", "V", "S", "D").forEach { d ->
+                Text(d, style = MaterialTheme.typography.labelMedium, color = FinanceColors.MediumGray, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            }
+        }
+        for (week in 0 until (cells + 6) / 7) {
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                for (dow in 0 until 7) {
+                    val day = week * 7 + dow - offset + 1
+                    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (day in 1..month.lengthOfMonth()) {
+                            val isToday = month.atDay(day) == today
+                            Text(
+                                day.toString(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isToday) FinanceColors.White else FinanceColors.DarkBlue,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .background(if (isToday) FinanceColors.Blue else Color.Transparent, RoundedCornerShape(999.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 2.dp)) {
+                                dots[day].orEmpty().take(3).forEach { c ->
+                                    Box(modifier = Modifier.size(6.dp).background(c, androidx.compose.foundation.shape.CircleShape))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Text(
+            "Rojo vencido · ámbar vence pronto · azul pendiente · verde pagado o ingreso",
+            style = MaterialTheme.typography.bodySmall,
+            color = FinanceColors.MediumGray,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 
