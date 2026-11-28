@@ -20,8 +20,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // Regla de versiones: versionCode SIEMPRE sube en cada publicación (el actualizador
         // rechaza versiones menores o iguales). versionName sigue MAYOR.MENOR.PARCHE.
-        versionCode = 9
-        versionName = "0.9.0"
+        versionCode = 10
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

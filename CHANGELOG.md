@@ -2,6 +2,20 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [1.0.0] - 2026-11-28 · Primera versión estable
+
+Finance completa: presupuesto por rubros, gastos con "¿en qué?", ingresos fijos y variables,
+pagos del mes y créditos con cuotas, comprobantes, recordatorios, reportes con PDF y Excel,
+base de datos cifrada, contraseña y huella, respaldo cifrado, historial de cambios y
+actualizaciones verificadas desde GitHub. Ver el [manual](docs/MANUAL.md).
+
+### Cambiado
+- Lint ahora revisa todos los módulos y detiene la compilación si encuentra errores.
+- Manual de uso (docs/MANUAL.md) y guía de publicación (docs/PUBLICAR.md).
+
+### Corregido
+- Recordatorios: se comprueba el permiso de notificaciones justo antes de mostrar cada aviso.
+
 ## [0.9.0] - 2026-11-28 · Fase 9: actualizaciones
 
 ### Agregado

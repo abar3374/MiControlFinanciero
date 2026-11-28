@@ -60,12 +60,11 @@ jobs:
         run: |
           ./gradlew lintDebug --continue || STATUS=$?
           for f in $(find . -path '*lint_intermediate_text_report*' -name 'lint-results-debug.txt'); do
-            if grep -qE '[0-9]+ errors?' "$f" && ! grep -q '^No issues found' "$f"; then
+            if grep -q ': Error: ' "$f"; then
               echo "===== LINT $f"; grep -E ': Error: ' "$f" || true
             fi
           done
           exit ${STATUS:-0}
-        continue-on-error: true
 
       - name: Mostrar esquemas nuevos de la base de datos
         run: |

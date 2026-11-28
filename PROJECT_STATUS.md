@@ -4,25 +4,24 @@
 > Pégalo completo al inicio de la nueva conversación junto con el prompt maestro.
 
 **Última actualización:** 2026-11-28
-**Versión:** 0.9.0 (versionCode 9)
+**Versión:** 1.0.0 (versionCode 10) — primera versión estable
 
 ## Estado actual
 
 | Fase | Nombre | Estado |
 | --- | --- | --- |
-| 1 | Arquitectura | Terminada: compila y el usuario aprobó la interfaz (24-nov) |
-| 2 | Interfaz | En curso: personalización pedida por el usuario (perfil, Registrar con tarjetas) |
-| 3 | Base de datos | Hecha en lo necesario: esquema v2 (perfil, categorías, rubros, gastos, ingresos, auditoría) |
+| 1 | Arquitectura | Terminada |
+| 2 | Interfaz | Terminada (perfil, Registrar con tarjetas, gráficas) |
+| 3 | Base de datos | Terminada: SQLCipher, esquema v4 con migraciones automáticas |
 | 4 | Presupuestos, gastos e ingresos | Terminada (0.3.0; comprobante en 0.5.0) |
 | 5 | Gastos fijos, créditos e ingresos fijos | Terminada (0.4.0 – 0.5.0) |
 | 6 | Notificaciones | Terminada (0.6.0) |
 | 7 | Reportes | Terminada (0.7.0) |
 | 8 | Seguridad | Terminada (0.8.0): contraseña, huella, bloqueo configurable, FLAG_SECURE, BD cifrada, respaldo cifrado, auditoría |
 | 9 | Actualizaciones | Terminada (0.9.0): GitHub Releases, canales, SHA-256, firma, sin bajar versión |
-| 10 | Pruebas y publicación | Pendiente |
+| 10 | Pruebas y publicación | Terminada (1.0.0): 55 pruebas de dominio, lint sin errores, manual, release estable v1.0.0 |
 
-**Fase terminada:** Fase 1. El usuario pidió avanzar con perfil, seguridad y Registrar (0.2.0).
-**Fase pendiente inmediata:** confirmar Fase 1 → iniciar Fase 2.
+**Todas las fases terminadas.** Siguiente: pruebas del usuario en su teléfono y mejoras que pida.
 
 ## Documentos de diseño
 
@@ -145,11 +144,9 @@ saldados dejan de aparecer.
 
 ## Próximas tareas
 
-1. Usuario: instalar 0.4.0 (pre-release v0.4.0-4-beta) y probar pagos del mes, créditos y categorías.
-2. Fase 4 pendiente: adjuntar comprobante a un gasto.
-3. Fase 5 (resto): ingresos fijos esperados (salario), frecuencias quincenal/bimestral/etc.,
-   tasa de interés y saldo de créditos, calendario de pagos. Fase 6: recordatorios 7/3/1/0 días.
-4. Fase 2 (Interfaz, pendiente de pulir): componentes reutilizables del boceto (tarjetas de resumen, filas de
-   movimiento, chips, campos de dinero), estructura visual completa de Inicio y Perfil,
-   adaptación a pantallas pequeñas (360 dp) y grandes.
-
+1. Usuario: instalar la versión estable 1.0.0 y probar en su teléfono (manual en docs/MANUAL.md).
+   Crear un respaldo cifrado apenas tenga datos.
+2. Cambios que pida el usuario: cada uno sube versionCode, se prueba como "-beta" y luego se
+   publica como estable con la etiqueta vX.Y.Z (docs/PUBLICAR.md).
+3. Ideas posibles (no pedidas aún): metas de ahorro, widget de Inicio, frecuencia quincenal nativa,
+   recordatorio de ingresos esperados, modo oscuro.
