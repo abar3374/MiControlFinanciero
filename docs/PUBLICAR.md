@@ -18,16 +18,13 @@
 
 1. Verifica que la última versión de prueba funciona en el teléfono.
 2. Asegúrate de que `CHANGELOG.md` tiene la sección `## [X.Y.Z]` (se usa como notas).
-3. Crea y sube la etiqueta, igual al `versionName`:
-
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-
-4. GitHub Actions publica la release **normal** `vX.Y.Z` con `finance-X.Y.Z-<code>.apk` y su
-   `.sha256`. Si la etiqueta no coincide con `versionName`, o si no hay firma oficial, falla a
-   propósito y no publica nada.
+3. Publica, de una de estas dos formas:
+   - **Desde el navegador (recomendado):** GitHub → pestaña **Actions** → **CI** → botón
+     **Run workflow** → rama `main` → marca **"Publicar como versión ESTABLE"** → **Run workflow**.
+   - **Desde la terminal:** `git tag vX.Y.Z` y `git push origin vX.Y.Z` (igual al `versionName`).
+4. GitHub Actions compila, firma, verifica y publica la release **normal** `vX.Y.Z` (marcada como
+   *Latest*) con `finance-X.Y.Z-<code>.apk` y su `.sha256`. Si la etiqueta no coincide con
+   `versionName`, si ya existe esa versión estable, o si no hay firma oficial, no publica nada.
 
 ## Firma (muy importante)
 

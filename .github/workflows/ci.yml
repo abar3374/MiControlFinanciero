@@ -16,7 +16,14 @@ on:
     # Versión ESTABLE: subir una etiqueta vX.Y.Z igual al versionName (ver docs/PUBLICAR.md).
     tags: [ 'v*.*.*' ]
   pull_request:
+  # Botón "Run workflow" en GitHub → Actions → CI. Con "estable" marcado publica la versión
+  # estable v<versionName> desde main (solo quien tiene permiso de escritura puede usarlo).
   workflow_dispatch:
+    inputs:
+      estable:
+        description: 'Publicar como versión ESTABLE (v<versionName>)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -78,7 +85,7 @@ jobs:
 
       - name: Preparar la clave de firma
         id: signing
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) || (github.event_name == 'workflow_dispatch' && inputs.estable && github.ref == 'refs/heads/main')
         env:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
@@ -180,14 +187,14 @@ jobs:
           fi
 
       - name: Publicar versión estable
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && inputs.estable && github.ref == 'refs/heads/main')
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
           CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
           NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
-          TAG="${GITHUB_REF_NAME}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then TAG="v${NAME}"; else TAG="${GITHUB_REF_NAME}"; fi
           if [ "$TAG" != "v${NAME}" ]; then
             echo "::error::La etiqueta $TAG no coincide con versionName $NAME. No se publica."
             exit 1
@@ -204,5 +211,6 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$APK.sha256" --clobber
           else
-            gh release create "$TAG" "$APK" "$APK.sha256" --verify-tag --title "Finance $NAME" --notes "$NOTES"
+            # Con el botón, la etiqueta se crea sobre el commit compilado; con push de etiqueta ya existe.
+            gh release create "$TAG" "$APK" "$APK.sha256" --target "$GITHUB_SHA" --title "Finance $NAME" --notes "$NOTES" --latest
           fi
