@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Manifiesto de Finance.
-    Fase 1: la app NO pide ningún permiso. Los permisos se agregan solo cuando una
-    funcionalidad real los necesite (notificaciones en Fase 6, Internet para
-    actualizaciones en Fase 9), cada uno con su explicación.
+    Permisos: solo los necesarios, cada uno con su explicación junto a la línea que lo pide.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Fase 6: avisos antes del vencimiento de los pagos (Android 13+ pide permiso al usuario). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
         allowBackup=false y dataExtractionRules: Android no copia tus datos financieros
@@ -24,12 +26,25 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- WorkManager se inicia desde FinanceApplication (para poder usar Hilt en las tareas). -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <!-- Permite abrir comprobantes y reportes con otra app sin exponer las carpetas privadas. -->
         <provider

@@ -13,7 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.micontrolfinanciero.app.core.model.AppSettings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -344,6 +351,84 @@ internal fun SecuritySection(
                     role = Role.Switch
                     stateDescription = stateText
                 },
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------- Recordatorios (Fase 6)
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun RemindersSection(
+    settings: AppSettings,
+    canNotify: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onRequestPermission: () -> Unit,
+    onToggleDay: (Int) -> Unit,
+    onCustomChange: (String) -> Unit,
+    onHourChange: (Int) -> Unit,
+) {
+    SectionTitle("Recordatorios de pago")
+    FinanceCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Avisarme antes de cada vencimiento", style = MaterialTheme.typography.bodyLarge, color = FinanceColors.DarkBlue)
+                Text(
+                    "Por ejemplo: «Recordatorio: mañana vence Internet por \$120.000».",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = FinanceColors.MediumGray,
+                )
+            }
+            Switch(checked = settings.remindersEnabled, onCheckedChange = onEnabledChange)
+        }
+        if (settings.remindersEnabled && !canNotify) {
+            Column(
+                modifier = Modifier
+                    .padding(top = 10.dp)
+                    .fillMaxWidth()
+                    .background(FinanceColors.AmberTint, MaterialTheme.shapes.small)
+                    .padding(12.dp),
+            ) {
+                Text("Las notificaciones están desactivadas para Finance.", style = MaterialTheme.typography.bodyMedium, color = FinanceColors.Amber)
+                TextButton(onClick = onRequestPermission) { Text("Activar notificaciones") }
+            }
+        }
+        if (settings.remindersEnabled) {
+            Text("Avisar", style = MaterialTheme.typography.labelLarge, color = FinanceColors.DarkBlue, modifier = Modifier.padding(top = 12.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(7 to "7 días antes", 3 to "3 días antes", 1 to "1 día antes", 0 to "El mismo día").forEach { (day, label) ->
+                    FilterChip(
+                        selected = day in settings.reminderDays,
+                        onClick = { onToggleDay(day) },
+                        label = { Text(label) },
+                    )
+                }
+            }
+            var custom by remember(settings.customReminderDays) { mutableStateOf(settings.customReminderDays?.toString().orEmpty()) }
+            OutlinedTextField(
+                value = custom,
+                onValueChange = { v -> custom = v.filter { it.isDigit() }.take(2); onCustomChange(custom) },
+                label = { Text("Recordatorio personalizado (días antes, opcional)") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
+            Text("Hora de la revisión diaria", style = MaterialTheme.typography.labelLarge, color = FinanceColors.DarkBlue, modifier = Modifier.padding(top = 12.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(6, 7, 8, 9, 12, 18, 20).forEach { hour ->
+                    FilterChip(
+                        selected = settings.reminderHour == hour,
+                        onClick = { onHourChange(hour) },
+                        label = { Text(if (hour < 12) "$hour a. m." else if (hour == 12) "12 m." else "${hour - 12} p. m.") },
+                    )
+                }
+            }
+            Text(
+                "Los avisos llegan aunque la app esté cerrada y siguen después de reiniciar el teléfono. Nunca se repite el mismo aviso. En la pantalla bloqueada no se muestran valores.",
+                style = MaterialTheme.typography.bodySmall,
+                color = FinanceColors.MediumGray,
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }

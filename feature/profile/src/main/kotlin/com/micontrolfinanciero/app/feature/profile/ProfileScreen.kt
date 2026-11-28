@@ -1,5 +1,10 @@
 package com.micontrolfinanciero.app.feature.profile
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.micontrolfinanciero.app.core.designsystem.component.ScreenHeader
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
+import com.micontrolfinanciero.app.core.notifications.ReminderNotifications
 import com.micontrolfinanciero.app.core.security.BiometricAuthenticator
 import com.micontrolfinanciero.app.core.security.findFragmentActivity
 
@@ -48,6 +54,16 @@ fun ProfileRoute(
         val message = state.message ?: return@LaunchedEffect
         snackbar.showSnackbar(message)
         viewModel.onMessageShown()
+    }
+
+    // Permiso de notificaciones (Android 13+). Si lo niega, se explica cómo activarlo después.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            viewModel.checkRemindersNow()
+            viewModel.showMessage("Listo: te avisaremos antes de cada vencimiento.")
+        } else {
+            viewModel.showMessage("Sin permiso no se pueden mostrar avisos. Puedes activarlo en los ajustes del teléfono.")
+        }
     }
 
     // Selector de fotos de Android: no necesita permisos y solo entrega la foto elegida.
@@ -129,6 +145,27 @@ fun ProfileRoute(
                     onBiometricToggle = onBiometricToggle,
                 )
 
+                RemindersSection(
+                    settings = state.settings,
+                    onEnabledChange = { enabled ->
+                        if (enabled && Build.VERSION.SDK_INT >= 33 && !ReminderNotifications.canNotify(context)) {
+                            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        viewModel.setRemindersEnabled(enabled)
+                    },
+                    canNotify = ReminderNotifications.canNotify(context),
+                    onRequestPermission = {
+                        if (Build.VERSION.SDK_INT >= 33) {
+                            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            openNotificationSettings(context)
+                        }
+                    },
+                    onToggleDay = viewModel::toggleReminderDay,
+                    onCustomChange = viewModel::setCustomReminder,
+                    onHourChange = viewModel::setReminderHour,
+                )
+
                 RegionSection()
 
                 AboutSection(appVersion = appVersion)
@@ -141,5 +178,17 @@ fun ProfileRoute(
                 .align(Alignment.BottomCenter)
                 .padding(16.dp),
         )
+    }
+}
+
+/** Abre la pantalla de notificaciones de la app en los ajustes del teléfono. */
+internal fun openNotificationSettings(context: Context) {
+    runCatching {
+        val intent = if (Build.VERSION.SDK_INT >= 26) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + context.packageName))
+        }
+        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

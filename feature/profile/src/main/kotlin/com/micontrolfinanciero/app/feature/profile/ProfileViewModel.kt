@@ -2,7 +2,12 @@ package com.micontrolfinanciero.app.feature.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import com.micontrolfinanciero.app.core.domain.finance.SettingsRepository
 import com.micontrolfinanciero.app.core.domain.profile.ProfileField
+import com.micontrolfinanciero.app.core.model.AppSettings
+import com.micontrolfinanciero.app.core.notifications.ReminderScheduler
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.micontrolfinanciero.app.core.domain.profile.ProfilePhotoStorage
 import com.micontrolfinanciero.app.core.domain.profile.ProfileValidator
 import com.micontrolfinanciero.app.core.domain.profile.UserProfileRepository
@@ -41,6 +46,7 @@ data class ProfileUiState(
     val credentialsErrors: Map<ProfileField, String> = emptyMap(),
     val saving: Boolean = false,
     val photoBusy: Boolean = false,
+    val settings: AppSettings = AppSettings(),
     /** Mensaje corto de confirmación o error para mostrar una vez. */
     val message: String? = null,
 )
@@ -49,12 +55,17 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     private val repository: UserProfileRepository,
     private val photoStorage: ProfilePhotoStorage,
+    private val settingsRepository: SettingsRepository,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            settingsRepository.observeSettings().collect { settings -> _uiState.update { it.copy(settings = settings) } }
+        }
         viewModelScope.launch {
             repository.observeProfile().collect { profile ->
                 _uiState.update { state ->
@@ -223,6 +234,31 @@ class ProfileViewModel @Inject constructor(
                 it.copy(message = if (enabled) "Huella activada." else "Huella desactivada.")
             }
         }
+    }
+
+    // ---------- Recordatorios (Fase 6)
+
+    fun setRemindersEnabled(enabled: Boolean) = updateSettings { it.copy(remindersEnabled = enabled) }
+
+    fun toggleReminderDay(day: Int) = updateSettings { s ->
+        s.copy(reminderDays = if (day in s.reminderDays) s.reminderDays - day else s.reminderDays + day)
+    }
+
+    fun setCustomReminder(text: String) {
+        val days = text.filter { it.isDigit() }.take(2).toIntOrNull()?.takeIf { it in 0..60 }
+        updateSettings { it.copy(customReminderDays = days) }
+    }
+
+    fun setReminderHour(hour: Int) {
+        updateSettings { it.copy(reminderHour = hour) }
+        ReminderScheduler.scheduleDaily(appContext, hour, replace = true)
+    }
+
+    /** Revisa ahora mismo los vencimientos (por ejemplo, justo después de dar el permiso). */
+    fun checkRemindersNow() = ReminderScheduler.checkNow(appContext)
+
+    private fun updateSettings(change: (AppSettings) -> AppSettings) {
+        viewModelScope.launch { settingsRepository.update(change) }
     }
 
     fun showMessage(message: String) = _uiState.update { it.copy(message = message) }

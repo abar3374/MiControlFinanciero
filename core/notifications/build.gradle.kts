@@ -1,10 +1,11 @@
-// :core:notifications — canales de notificación y recordatorios con WorkManager.
-// Fase 1: solo existe el módulo. Se implementa en la Fase 6.
+// :core:notifications — recordatorios de pagos con WorkManager y notificaciones de Android.
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -20,5 +21,14 @@ android {
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
 dependencies {
-    implementation(projects.core.model)
+    implementation(projects.core.domain)
+    implementation(projects.core.database)
+    implementation(projects.core.designsystem)
+
+    implementation(libs.androidx.core.ktx)
+    api(libs.androidx.work.runtime.ktx)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 }

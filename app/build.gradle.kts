@@ -20,8 +20,8 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         // Regla de versiones: versionCode SIEMPRE sube en cada publicación (el actualizador
         // rechaza versiones menores o iguales). versionName sigue MAYOR.MENOR.PARCHE.
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -78,6 +78,7 @@ dependencies {
     // Módulos del proyecto
     implementation(projects.core.designsystem)
     implementation(projects.core.data)
+    implementation(projects.core.notifications)
     implementation(projects.feature.lock)
     implementation(projects.feature.dashboard)
     implementation(projects.feature.budget)
@@ -95,9 +96,11 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
 
-    // Inyección de dependencias
+    // Inyección de dependencias (y en las tareas de WorkManager)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(platform(libs.androidx.compose.bom))
     debugImplementation(libs.androidx.compose.ui.tooling)

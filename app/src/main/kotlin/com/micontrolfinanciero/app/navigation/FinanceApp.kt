@@ -3,6 +3,7 @@ package com.micontrolfinanciero.app.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination
@@ -17,6 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.micontrolfinanciero.app.core.designsystem.theme.FinanceColors
 import com.micontrolfinanciero.app.core.model.MovementKind
+import com.micontrolfinanciero.app.core.notifications.ReminderNotifications
+import kotlinx.coroutines.flow.StateFlow
 import com.micontrolfinanciero.app.feature.budget.BudgetFormRoute
 import com.micontrolfinanciero.app.feature.budget.BudgetRoute
 import com.micontrolfinanciero.app.feature.credit.ExpectedIncomeFormRoute
@@ -39,19 +42,32 @@ import com.micontrolfinanciero.app.feature.reports.ReportsRoute
  * después muestra la barra inferior y el contenido de la pestaña elegida.
  */
 @Composable
-fun FinanceApp(appVersion: String, lockManager: AppLockManager) {
+fun FinanceApp(
+    appVersion: String,
+    lockManager: AppLockManager,
+    pendingOpen: StateFlow<String?>,
+    onOpenHandled: () -> Unit,
+) {
     val lockState by lockManager.state.collectAsStateWithLifecycle()
     when (val state = lockState) {
         LockState.Checking -> LockStatusScreen(message = null)
         is LockState.Failed -> LockStatusScreen(message = state.message)
         LockState.Locked -> LockRoute()
-        LockState.Unlocked -> FinanceMainContent(appVersion)
+        LockState.Unlocked -> FinanceMainContent(appVersion, pendingOpen, onOpenHandled)
     }
 }
 
 @Composable
-private fun FinanceMainContent(appVersion: String) {
+private fun FinanceMainContent(appVersion: String, pendingOpen: StateFlow<String?>, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
+    val open by pendingOpen.collectAsStateWithLifecycle()
+    // Al tocar una notificación de pago se abre "Pagos del mes" (siempre después del bloqueo).
+    LaunchedEffect(open) {
+        if (open == ReminderNotifications.OPEN_PAYMENTS) {
+            navController.navigate(MonthlyPaymentsDestination) { launchSingleTop = true }
+            onOpenHandled()
+        }
+    }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     // Los formularios y el historial ocupan toda la pantalla (sin barra inferior).
