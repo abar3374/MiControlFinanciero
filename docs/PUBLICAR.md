@@ -24,7 +24,7 @@
    - **Desde la terminal:** `git tag vX.Y.Z` y `git push origin vX.Y.Z` (igual al `versionName`).
 4. GitHub Actions compila, firma, verifica y publica la release **normal** `vX.Y.Z` (marcada como
    *Latest*) con `finance-X.Y.Z-<code>.apk` y su `.sha256`. Si la etiqueta no coincide con
-   `versionName`, si ya existe esa versión estable, o si no hay firma oficial, no publica nada.
+   `versionName` o si no hay firma oficial, no publica nada. Si esa versión ya existe, reemplaza su APK.
 
 ## Firma (muy importante)
 
