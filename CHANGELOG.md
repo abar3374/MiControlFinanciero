@@ -2,6 +2,38 @@
 
 Formato: cada versión lista lo agregado, cambiado y corregido. La más reciente va arriba.
 
+## [0.7.0] - 2026-11-28 · Fase 7: reportes
+
+### Agregado
+- Pestaña Reportes con datos reales: día, semana, mes, trimestre, semestre y año, con flechas para
+  ir al periodo anterior o siguiente.
+- Filtros: categoría, clasificación, método de pago y gastos fijos u ocasionales (fijo = viene de un
+  pago fijo o de un rubro fijo).
+- Gráficas dibujadas en el teléfono: evolución de gastos e ingresos, por categoría, presupuesto vs
+  real (mes), fijos vs ocasionales, por clasificación, por método de pago y comparativo de 6 meses.
+  Se indica la categoría que más creció frente al periodo anterior.
+- Exportar a PDF y a Excel (.xlsx con hojas Resumen, Por categoría, Movimientos y Comparativo meses),
+  guardado donde el usuario elija. Sin librerías externas.
+- 4 pruebas nuevas (periodos, totales, filtros y archivo Excel).
+
+## [0.6.0] - 2026-11-28 · Fase 6: recordatorios
+
+### Agregado
+- Recordatorios de pagos fijos y cuotas: 7, 3, 1 días antes y el mismo día (configurables, más un
+  día personalizado) y aviso de vencido. Hora del aviso configurable. Nunca se repite un aviso.
+- Notificaciones privadas en la pantalla de bloqueo; al tocarlas abre Pagos del mes.
+- Perfil: sección Recordatorios con permiso de notificaciones (Android 13+).
+- Pruebas del planificador de recordatorios.
+
+## [0.5.0] - 2026-11-28 · Fase 5: créditos e ingresos esperados
+
+### Agregado
+- Pagos fijos cada 1, 2, 3, 6 o 12 meses; créditos con entidad, tasa y valor original, y resumen
+  de saldo estimado (cuotas restantes × cuota) con historial.
+- Ingresos esperados del mes (salario y otros) con "Recibido" / "Deshacer".
+- Comprobantes (foto o PDF) adjuntos a los gastos, guardados dentro de la app.
+- Base de datos v4 con migración automática.
+
 ## [0.4.0] - 2026-11-24 · Pagos del mes y categorías
 
 ### Agregado

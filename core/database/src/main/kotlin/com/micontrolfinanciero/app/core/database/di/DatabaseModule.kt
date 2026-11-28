@@ -7,6 +7,7 @@ import com.micontrolfinanciero.app.core.database.dao.AttachmentDao
 import com.micontrolfinanciero.app.core.database.dao.AuditDao
 import com.micontrolfinanciero.app.core.database.dao.ExpectedIncomeDao
 import com.micontrolfinanciero.app.core.database.dao.NotificationLogDao
+import com.micontrolfinanciero.app.core.database.dao.ReportDao
 import com.micontrolfinanciero.app.core.database.dao.SettingsDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
@@ -55,4 +56,5 @@ object DatabaseModule {
     @Provides fun provideAttachmentDao(db: FinanceDatabase): AttachmentDao = db.attachmentDao()
     @Provides fun provideSettingsDao(db: FinanceDatabase): SettingsDao = db.settingsDao()
     @Provides fun provideNotificationLogDao(db: FinanceDatabase): NotificationLogDao = db.notificationLogDao()
+    @Provides fun provideReportDao(db: FinanceDatabase): ReportDao = db.reportDao()
 }

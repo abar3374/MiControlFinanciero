@@ -7,6 +7,7 @@ import com.micontrolfinanciero.app.core.database.dao.AttachmentDao
 import com.micontrolfinanciero.app.core.database.dao.AuditDao
 import com.micontrolfinanciero.app.core.database.dao.ExpectedIncomeDao
 import com.micontrolfinanciero.app.core.database.dao.NotificationLogDao
+import com.micontrolfinanciero.app.core.database.dao.ReportDao
 import com.micontrolfinanciero.app.core.database.dao.SettingsDao
 import com.micontrolfinanciero.app.core.database.dao.BudgetDao
 import com.micontrolfinanciero.app.core.database.dao.CategoryDao
@@ -80,6 +81,7 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun attachmentDao(): AttachmentDao
     abstract fun settingsDao(): SettingsDao
     abstract fun notificationLogDao(): NotificationLogDao
+    abstract fun reportDao(): ReportDao
 
     companion object {
         const val FILE_NAME = "finance.db"

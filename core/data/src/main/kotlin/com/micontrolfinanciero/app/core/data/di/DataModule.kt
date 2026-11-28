@@ -2,6 +2,7 @@ package com.micontrolfinanciero.app.core.data.di
 
 import com.micontrolfinanciero.app.core.data.finance.RoomAttachmentRepository
 import com.micontrolfinanciero.app.core.data.finance.RoomBudgetRepository
+import com.micontrolfinanciero.app.core.data.finance.RoomReportRepository
 import com.micontrolfinanciero.app.core.data.settings.RoomSettingsRepository
 import com.micontrolfinanciero.app.core.data.finance.RoomCategoryRepository
 import com.micontrolfinanciero.app.core.data.finance.RoomFixedPaymentRepository
@@ -10,6 +11,7 @@ import com.micontrolfinanciero.app.core.data.profile.FileProfilePhotoStorage
 import com.micontrolfinanciero.app.core.data.profile.RoomUserProfileRepository
 import com.micontrolfinanciero.app.core.domain.finance.AttachmentRepository
 import com.micontrolfinanciero.app.core.domain.finance.BudgetRepository
+import com.micontrolfinanciero.app.core.domain.finance.ReportRepository
 import com.micontrolfinanciero.app.core.domain.finance.SettingsRepository
 import com.micontrolfinanciero.app.core.domain.finance.CategoryRepository
 import com.micontrolfinanciero.app.core.domain.finance.FixedPaymentRepository
@@ -46,6 +48,9 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindAttachmentRepository(impl: RoomAttachmentRepository): AttachmentRepository
+
+    @Binds
+    abstract fun bindReportRepository(impl: RoomReportRepository): ReportRepository
 
     @Binds
     abstract fun bindSettingsRepository(impl: RoomSettingsRepository): SettingsRepository

@@ -13,6 +13,8 @@ import com.micontrolfinanciero.app.core.database.entity.ExpectedIncomeEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpectedIncomeRecordEntity
 import com.micontrolfinanciero.app.core.database.entity.IncomeRecordWithIncome
 import com.micontrolfinanciero.app.core.database.entity.NotificationLogEntity
+import com.micontrolfinanciero.app.core.database.entity.ReportExpenseRow
+import com.micontrolfinanciero.app.core.database.entity.ReportIncomeRow
 import com.micontrolfinanciero.app.core.database.entity.BudgetEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseCategoryEntity
 import com.micontrolfinanciero.app.core.database.entity.ExpenseEntity
@@ -311,4 +313,32 @@ interface NotificationLogDao {
 
     @Query("DELETE FROM notification_log WHERE sent_at < :before")
     suspend fun deleteOlderThan(before: Long)
+}
+
+@Dao
+interface ReportDao {
+    @Query(
+        """
+        SELECT e.id AS id, e.concept AS concept, e.amount_cents AS amount_cents, e.occurred_at AS occurred_at,
+               e.category_id AS category_id, c.name AS category_name, e.nature AS nature,
+               e.payment_method AS payment_method,
+               (EXISTS (SELECT 1 FROM fixed_payment_record r WHERE r.expense_id = e.id)
+                OR COALESCE(b.frequency_type, '') = 'FIXED') AS is_fixed
+        FROM expense e
+        JOIN expense_category c ON c.id = e.category_id
+        LEFT JOIN budget b ON b.id = e.budget_id
+        WHERE e.voided = 0 AND e.occurred_at >= :start AND e.occurred_at < :end
+        ORDER BY e.occurred_at DESC
+        """,
+    )
+    fun observeExpenses(start: Long, end: Long): Flow<List<ReportExpenseRow>>
+
+    @Query(
+        """
+        SELECT id, source, amount_cents, received_at, income_type FROM income
+        WHERE voided = 0 AND received_at >= :start AND received_at < :end
+        ORDER BY received_at DESC
+        """,
+    )
+    fun observeIncomes(start: Long, end: Long): Flow<List<ReportIncomeRow>>
 }

@@ -139,3 +139,24 @@ data class GroupTotal(
     @ColumnInfo(name = "group_name") val groupName: String,
     @ColumnInfo(name = "total_cents") val totalCents: Long,
 )
+
+/** Gasto con los datos de reportes (categoría, y si es fijo por pago fijo o rubro fijo). */
+data class ReportExpenseRow(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "concept") val concept: String,
+    @ColumnInfo(name = "amount_cents") val amountCents: Long,
+    @ColumnInfo(name = "occurred_at") val occurredAt: Long,
+    @ColumnInfo(name = "category_id") val categoryId: Long,
+    @ColumnInfo(name = "category_name") val categoryName: String,
+    @ColumnInfo(name = "nature") val nature: String,
+    @ColumnInfo(name = "payment_method") val paymentMethod: String,
+    @ColumnInfo(name = "is_fixed") val isFixed: Boolean,
+)
+
+data class ReportIncomeRow(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "source") val source: String,
+    @ColumnInfo(name = "amount_cents") val amountCents: Long,
+    @ColumnInfo(name = "received_at") val receivedAt: Long,
+    @ColumnInfo(name = "income_type") val incomeType: String,
+)

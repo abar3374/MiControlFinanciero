@@ -1,5 +1,4 @@
-// :core:reports — cálculos de reportes y exportación a PDF y Excel.
-// Fase 1: solo existe el módulo. Se implementa en la Fase 7.
+// :core:reports — exportación de reportes a PDF (PdfDocument de Android) y Excel (.xlsx propio).
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -20,5 +19,5 @@ android {
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
 dependencies {
-    implementation(projects.core.domain)
+    api(projects.core.domain)
 }

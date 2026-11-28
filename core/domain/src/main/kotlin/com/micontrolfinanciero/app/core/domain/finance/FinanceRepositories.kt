@@ -139,3 +139,8 @@ interface SettingsRepository {
     fun observeSettings(): Flow<com.micontrolfinanciero.app.core.model.AppSettings>
     suspend fun update(change: (com.micontrolfinanciero.app.core.model.AppSettings) -> com.micontrolfinanciero.app.core.model.AppSettings)
 }
+
+/** Datos reales para los reportes (gastos e ingresos vigentes de un rango). */
+interface ReportRepository {
+    fun observeData(startMillis: Long, endMillis: Long): Flow<Pair<List<com.micontrolfinanciero.app.core.domain.report.ReportExpense>, List<com.micontrolfinanciero.app.core.domain.report.ReportIncome>>>
+}

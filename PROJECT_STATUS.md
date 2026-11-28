@@ -3,8 +3,8 @@
 > Documento para retomar el desarrollo en una conversación nueva sin perder contexto.
 > Pégalo completo al inicio de la nueva conversación junto con el prompt maestro.
 
-**Última actualización:** 2026-11-24
-**Versión:** 0.4.0 (versionCode 4)
+**Última actualización:** 2026-11-28
+**Versión:** 0.7.0 (versionCode 7)
 
 ## Estado actual
 
@@ -13,10 +13,10 @@
 | 1 | Arquitectura | Terminada: compila y el usuario aprobó la interfaz (24-nov) |
 | 2 | Interfaz | En curso: personalización pedida por el usuario (perfil, Registrar con tarjetas) |
 | 3 | Base de datos | Hecha en lo necesario: esquema v2 (perfil, categorías, rubros, gastos, ingresos, auditoría) |
-| 4 | Presupuestos, gastos e ingresos | Entregada en 0.3.0 (compila en CI) · falta: comprobante adjunto · pendiente prueba del usuario |
-| 5 | Gastos fijos, créditos e ingresos fijos | En curso: pagos fijos y créditos con cuotas (0.4.0). Falta: ingresos fijos esperados, frecuencias distintas a mensual, tasa de interés, calendario |
-| 6 | Notificaciones | Pendiente |
-| 7 | Reportes | Pendiente |
+| 4 | Presupuestos, gastos e ingresos | Terminada (0.3.0; comprobante en 0.5.0) |
+| 5 | Gastos fijos, créditos e ingresos fijos | Terminada (0.4.0 – 0.5.0) |
+| 6 | Notificaciones | Terminada (0.6.0) |
+| 7 | Reportes | Terminada (0.7.0) |
 | 8 | Seguridad | Adelantada en parte: usuario/contraseña, huella, bloqueo, clave en Keystore |
 | 9 | Actualizaciones | Pendiente |
 | 10 | Pruebas y publicación | Pendiente |
@@ -41,6 +41,14 @@
 - `BudgetMath` con pruebas (porcentaje, restante, balance, umbrales de alerta).
 - Respaldo automático de Android desactivado (`allowBackup=false` + `data_extraction_rules`).
 - CI en GitHub Actions: compila, prueba, lint y publica el APK DEBUG como artefacto.
+
+## Versiones 0.5.0 – 0.7.0 (28-nov-2026)
+- 0.5.0 (Fase 5): créditos con entidad/tasa/saldo estimado, pagos cada 1–12 meses, ingresos
+  esperados, comprobantes adjuntos. BD v4.
+- 0.6.0 (Fase 6): recordatorios con WorkManager (diario a la hora elegida), registro de avisos
+  enviados para no repetir, notificaciones privadas que abren Pagos del mes.
+- 0.7.0 (Fase 7): Reportes por periodo con filtros, gráficas Canvas y exportación PDF / Excel.
+  Cálculos en core:domain (ReportCalculator, XlsxWriter) con pruebas; PDF en core:reports.
 
 ## Versión 0.4.0 (24-nov-2026) — Pagos del mes
 

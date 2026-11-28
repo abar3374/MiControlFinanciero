@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="reports_title">Reportes</string>
-    <string name="reports_empty_title">¿En qué se fue la plata?</string>
-    <string name="reports_empty_message">Verás tus gastos por día, semana, mes, trimestre, semestre y año; por concepto, categoría y método de pago; ingresos frente a gastos; presupuesto frente a gasto real; y podrás exportar a PDF y Excel. Todo con tus datos reales.</string>
-    <string name="reports_empty_badge">Llega en la Fase 7</string>
-</resources>
